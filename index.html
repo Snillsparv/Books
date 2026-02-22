@@ -2681,6 +2681,14 @@
         document.body.style.overflow = '';
         document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
     });
+
+    // Go to voting – close book pages and show voting section
+    document.getElementById('goToVoteBtn').addEventListener('click', () => {
+        document.getElementById('bookPagesContainer').classList.remove('active');
+        document.getElementById('pageNav').classList.remove('active');
+        document.body.style.overflow = '';
+        document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
+    });
 })();
 </script>
 
