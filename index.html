@@ -480,8 +480,8 @@
         }
 
         .vote-options {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
             margin-bottom: 2rem;
         }
@@ -878,6 +878,10 @@
                 padding: 4rem 1.25rem;
             }
 
+            .vote-options {
+                grid-template-columns: 1fr;
+            }
+
             .voter-buttons {
                 gap: 0.4rem;
             }
@@ -1142,6 +1146,7 @@
         /* Dystopian voting section */
         body.dystopian #voting {
             background: linear-gradient(160deg, #0a0a0a 0%, #1a0000 100%);
+            color: #e0e0e0;
         }
 
         body.dystopian #voting .section-header h2 {
@@ -2656,10 +2661,17 @@
         triggerDystopianTransition();
     });
 
-    // Second click: open the books
+    // Second click: mini-glitch then open the books
     document.getElementById('enterBooksBtn').addEventListener('click', (e) => {
         e.preventDefault();
-        showBooks();
+        const overlay = document.getElementById('glitchOverlay');
+        overlay.classList.add('active');
+        document.body.classList.add('screen-shake');
+        setTimeout(() => document.body.classList.remove('screen-shake'), 400);
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            showBooks();
+        }, 800);
     });
 
     // Go to voting – close book pages and show voting section
