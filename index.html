@@ -2012,6 +2012,56 @@
             font-weight: 600;
         }
 
+        .mic-meter-wrap {
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mic-meter-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+            transition: color 0.3s;
+        }
+
+        .mic-meter-label.active {
+            color: #00ff88;
+        }
+
+        .mic-meter-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mic-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff88, #ff3355);
+            border-radius: 6px;
+            transition: width 0.05s ease-out;
+        }
+
+        .mic-meter-threshold {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 12%;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 1;
+        }
+
         .game-start-btn, .game-next-btn {
             padding: 0.9rem 2.5rem;
             background: #ff0033;
@@ -2489,7 +2539,11 @@
 
     <div class="game-start-screen" id="gameStartScreen" style="display:none;">
         <h2>Robot Race</h2>
-        <p>Flyg din robot genom hindren! Tryck upp&aring;t eller mellanslag f&ouml;r att ge gas. Undvik hindren och samla po&auml;ng i 10 sekunder.</p>
+        <p>Robotarna &auml;r r&ouml;ststyrda! G&ouml;r ljud i mikrofonen f&ouml;r att flyga upp&aring;t. Undvik hindren &mdash; varje tr&auml;ff kostar po&auml;ng!</p>
+        <div class="mic-meter-wrap" id="micMeterWrap">
+            <span class="mic-meter-label" id="micMeterLabel">Aktiverar mikrofon...</span>
+            <div class="mic-meter-bar"><div class="mic-meter-fill" id="micMeterFill"></div><div class="mic-meter-threshold"></div></div>
+        </div>
         <div class="player-up" id="gamePlayerUp"></div>
         <button class="game-start-btn" id="gameStartBtn">K&ouml;r!</button>
     </div>
@@ -3317,6 +3371,61 @@ function revealBook(btn) {
             showPlayerStart();
         };
 
+        let micMeterRAF = null;
+
+        function initMicMeter() {
+            if (micMeterRAF) { cancelAnimationFrame(micMeterRAF); micMeterRAF = null; }
+            const meterFill = document.getElementById('micMeterFill');
+            const meterLabel = document.getElementById('micMeterLabel');
+
+            function setupMicMeter(analyser, dataArray) {
+                meterLabel.textContent = 'Mikrofon aktiv!';
+                meterLabel.classList.add('active');
+
+                function animateMeter() {
+                    if (startScreen.style.display === 'none') {
+                        micMeterRAF = null;
+                        return;
+                    }
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                    const level = sum / dataArray.length / 255;
+                    meterFill.style.width = (level * 100) + '%';
+                    micMeterRAF = requestAnimationFrame(animateMeter);
+                }
+                micMeterRAF = requestAnimationFrame(animateMeter);
+            }
+
+            if (!window._micAudioCtx) {
+                meterLabel.textContent = 'Aktiverar mikrofon...';
+                meterLabel.classList.remove('active');
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    window._micStream = stream;
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    window._micAudioCtx = audioCtx;
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    const analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 256;
+                    analyser.smoothingTimeConstant = 0.3;
+                    source.connect(analyser);
+                    window._micAnalyser = analyser;
+                    window._micData = new Uint8Array(analyser.frequencyBinCount);
+                    setupMicMeter(analyser, window._micData);
+                }).catch(() => {
+                    meterLabel.textContent = 'Mikrofon ej tillgänglig';
+                    meterLabel.classList.remove('active');
+                });
+            } else {
+                if (window._micAudioCtx.state === 'suspended') {
+                    window._micAudioCtx.resume();
+                }
+                meterLabel.textContent = 'Mikrofon aktiv!';
+                meterLabel.classList.add('active');
+                setupMicMeter(window._micAnalyser, window._micData);
+            }
+        }
+
         function showPlayerStart() {
             startScreen.style.display = '';
             scoresScreen.style.display = 'none';
@@ -3324,6 +3433,7 @@ function revealBook(btn) {
             const pName = players[playerIndex];
             document.getElementById('gamePlayerUp').textContent = pName + (pName.endsWith('s') ? ' tur!' : 's tur!');
             document.getElementById('gameStartBtn').textContent = 'Kör!';
+            initMicMeter();
         }
 
         document.getElementById('gameStartBtn').onclick = () => {
