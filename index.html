@@ -140,8 +140,11 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
             letter-spacing: 0.05em;
             border-radius: 50px;
+            border: none;
+            cursor: pointer;
             transition: all 0.3s ease;
             opacity: 0;
             animation: fadeInUp 0.8s ease forwards 0.9s;
@@ -780,6 +783,521 @@
 
         /* Hidden utility */
         .hidden { display: none !important; }
+
+        /* ═══════════════════════════════════════════
+           DYSTOPIAN GLITCH TRANSITION & THEME
+           ═══════════════════════════════════════════ */
+
+        /* Glitch overlay that covers the whole screen */
+        .glitch-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .glitch-overlay.active {
+            opacity: 1;
+            animation: glitch-master 1.8s ease-in-out forwards;
+        }
+
+        .glitch-overlay .glitch-bar {
+            position: absolute;
+            left: 0; right: 0;
+            height: 3px;
+            background: #ff0033;
+            opacity: 0;
+        }
+
+        .glitch-overlay.active .glitch-bar {
+            animation: glitch-bars 1.8s ease-in-out;
+        }
+
+        .glitch-overlay .glitch-block {
+            position: absolute;
+            background: rgba(255, 0, 51, 0.15);
+            opacity: 0;
+        }
+
+        .glitch-overlay.active .glitch-block {
+            animation: glitch-blocks 1.8s ease-in-out;
+        }
+
+        .glitch-text-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .glitch-text-overlay.active {
+            animation: glitch-text-flash 1.8s ease-in-out;
+        }
+
+        .glitch-text-overlay .glitch-msg {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(1.2rem, 4vw, 2.5rem);
+            color: #ff0033;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            text-shadow: 0 0 20px rgba(255, 0, 51, 0.8), 0 0 60px rgba(255, 0, 51, 0.4);
+        }
+
+        @keyframes glitch-master {
+            0% { opacity: 0; background: transparent; }
+            5% { opacity: 1; background: rgba(255, 0, 51, 0.05); }
+            10% { background: rgba(0, 0, 0, 0.3); }
+            15% { background: rgba(255, 0, 51, 0.1); }
+            20% { background: rgba(0, 0, 0, 0.6); }
+            30% { background: rgba(255, 0, 51, 0.03); }
+            40% { background: rgba(0, 0, 0, 0.8); }
+            50% { background: rgba(0, 0, 0, 0.95); }
+            60% { background: rgba(255, 0, 51, 0.05); }
+            70% { background: rgba(0, 0, 0, 0.98); }
+            85% { background: rgba(0, 0, 0, 1); }
+            100% { opacity: 0; background: transparent; }
+        }
+
+        @keyframes glitch-bars {
+            0%, 100% { opacity: 0; }
+            5% { opacity: 1; top: 20%; }
+            8% { opacity: 0; }
+            12% { opacity: 1; top: 55%; }
+            15% { opacity: 0; }
+            22% { opacity: 1; top: 30%; height: 5px; }
+            25% { opacity: 0; }
+            35% { opacity: 1; top: 70%; height: 2px; }
+            38% { opacity: 0; }
+            45% { opacity: 0.6; top: 15%; height: 8px; }
+            48% { opacity: 0; }
+            60% { opacity: 0; }
+        }
+
+        @keyframes glitch-blocks {
+            0%, 100% { opacity: 0; }
+            10% { opacity: 1; top: 10%; left: 5%; width: 30%; height: 10%; }
+            13% { opacity: 0; }
+            20% { opacity: 1; top: 60%; left: 40%; width: 50%; height: 5%; }
+            23% { opacity: 0; }
+            30% { opacity: 1; top: 30%; left: 20%; width: 40%; height: 15%; }
+            35% { opacity: 0; }
+            50% { opacity: 0; }
+        }
+
+        @keyframes glitch-text-flash {
+            0%, 100% { opacity: 0; }
+            35% { opacity: 0; }
+            40% { opacity: 1; transform: translate(-3px, 2px); }
+            42% { opacity: 0; }
+            45% { opacity: 1; transform: translate(3px, -1px); }
+            47% { opacity: 0; }
+            55% { opacity: 1; transform: translate(0, 0); }
+            65% { opacity: 1; }
+            75% { opacity: 0; }
+        }
+
+        /* Screen shake during glitch */
+        .screen-shake {
+            animation: screen-shake 0.4s ease-in-out;
+        }
+
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5px, 3px); }
+            20% { transform: translate(5px, -3px); }
+            30% { transform: translate(-3px, -5px); }
+            40% { transform: translate(3px, 5px); }
+            50% { transform: translate(-5px, -2px); }
+            60% { transform: translate(4px, 2px); }
+            70% { transform: translate(-2px, 4px); }
+            80% { transform: translate(2px, -4px); }
+            90% { transform: translate(-3px, 3px); }
+        }
+
+        /* ── DYSTOPIAN MODE ── */
+        body.dystopian {
+            --cream: #0a0a0a;
+            --dark: #0d0d0d;
+            --gold: #ff0033;
+            --gold-light: #ff3355;
+            --wine: #cc0022;
+            --wine-light: #ff1a40;
+            --teal: #ff0033;
+            --teal-light: #ff3355;
+            --paper: #0d0d0d;
+            --ink: #e0e0e0;
+            --muted: #888;
+            --shadow: rgba(255, 0, 51, 0.1);
+            --shadow-heavy: rgba(255, 0, 51, 0.25);
+            background: #0a0a0a;
+            color: #e0e0e0;
+        }
+
+        body.dystopian .hero {
+            background: linear-gradient(160deg, #0a0a0a 0%, #1a0000 50%, #0d0d0d 100%);
+        }
+
+        body.dystopian .hero::before {
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(255, 0, 51, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 0, 51, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(200, 0, 40, 0.05) 0%, transparent 50%);
+        }
+
+        body.dystopian .hero-overline {
+            color: #ff0033;
+        }
+
+        body.dystopian .hero h1 em {
+            color: #ff0033;
+        }
+
+        body.dystopian .hero-subtitle {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        body.dystopian .particle {
+            color: #ff0033 !important;
+        }
+
+        /* Dystopian section header */
+        body.dystopian .section-header h2 {
+            color: #ff0033;
+            text-shadow: 0 0 30px rgba(255, 0, 51, 0.3);
+        }
+
+        body.dystopian .section-header p {
+            color: #888;
+        }
+
+        /* Dystopian book cards */
+        body.dystopian #books {
+            background: #0d0d0d;
+        }
+
+        body.dystopian .book-card {
+            background: #111;
+            border: 1px solid rgba(255, 0, 51, 0.15);
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.05);
+        }
+
+        body.dystopian .book-card:hover {
+            box-shadow: 0 0 40px rgba(255, 0, 51, 0.15);
+            border-color: rgba(255, 0, 51, 0.4);
+        }
+
+        body.dystopian .book-card-accent {
+            background: linear-gradient(90deg, #ff0033, #cc0022) !important;
+        }
+
+        body.dystopian .book-card h3 {
+            color: #ff3355;
+        }
+
+        body.dystopian .book-author {
+            color: #888;
+        }
+
+        body.dystopian .book-description {
+            color: #aaa;
+        }
+
+        body.dystopian .book-quote {
+            border-left-color: #ff0033;
+            background: rgba(255, 0, 51, 0.05);
+        }
+
+        body.dystopian .book-quote p {
+            color: #ccc;
+        }
+
+        body.dystopian .book-genre {
+            background: rgba(255, 0, 51, 0.1) !important;
+            color: #ff0033 !important;
+        }
+
+        body.dystopian .book-tag {
+            background: rgba(255, 0, 51, 0.08);
+            color: #ff3355;
+            border: 1px solid rgba(255, 0, 51, 0.15);
+        }
+
+        /* Dystopian voting section */
+        body.dystopian #voting {
+            background: linear-gradient(160deg, #0a0a0a 0%, #1a0000 100%);
+        }
+
+        body.dystopian #voting .section-header h2 {
+            color: #ff3355;
+        }
+
+        body.dystopian .voter-btn:hover {
+            border-color: #ff0033;
+            color: #ff0033;
+        }
+
+        body.dystopian .voter-btn.selected {
+            border-color: #ff0033;
+            background: #ff0033;
+            color: #0a0a0a;
+        }
+
+        body.dystopian .vote-option.selected {
+            background: rgba(255, 0, 51, 0.1);
+            border-color: #ff0033;
+        }
+
+        body.dystopian .vote-option.selected .vote-radio {
+            border-color: #ff0033;
+            background: #ff0033;
+        }
+
+        body.dystopian .vote-submit-btn {
+            background: #ff0033;
+            color: #0a0a0a;
+        }
+
+        body.dystopian .vote-submit-btn:hover:not(:disabled) {
+            background: #ff3355;
+            box-shadow: 0 8px 25px rgba(255, 0, 51, 0.3);
+        }
+
+        body.dystopian .step-dot.active {
+            background: #ff0033;
+            color: #0a0a0a;
+        }
+
+        body.dystopian .step-dot.active .step-num {
+            background: #0a0a0a;
+            color: #ff0033;
+        }
+
+        body.dystopian .step-dot.completed {
+            background: rgba(255, 0, 51, 0.2);
+            color: #ff0033;
+        }
+
+        body.dystopian .step-dot.completed .step-num {
+            background: #ff0033;
+            color: #0a0a0a;
+        }
+
+        body.dystopian .result-bar-fill {
+            background: linear-gradient(90deg, #ff0033, #ff3355);
+        }
+
+        body.dystopian .round-result h4 {
+            color: #ff3355;
+        }
+
+        body.dystopian .winner-panel h3 {
+            color: #ff3355;
+        }
+
+        body.dystopian .winner-book-title {
+            color: #fff;
+        }
+
+        body.dystopian .winner-book-author {
+            color: #ff0033;
+        }
+
+        body.dystopian .voter-btn.has-voted {
+            border-color: rgba(255, 0, 51, 0.4);
+            color: rgba(255, 0, 51, 0.6);
+        }
+
+        body.dystopian .vote-instruction strong {
+            color: #ff3355;
+        }
+
+        body.dystopian footer {
+            background: #0a0a0a;
+            border-top: 1px solid rgba(255, 0, 51, 0.1);
+        }
+
+        body.dystopian footer span {
+            color: #ff0033;
+        }
+
+        /* Scanline effect on dystopian mode */
+        body.dystopian::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9998;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+        }
+
+        /* Subtle CRT flicker */
+        body.dystopian {
+            animation: crt-flicker 8s ease-in-out infinite;
+        }
+
+        @keyframes crt-flicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.97; }
+            94% { opacity: 1; }
+            96% { opacity: 0.98; }
+            97% { opacity: 1; }
+        }
+
+        /* ── BOOK CAROUSEL (dystopian mode) ── */
+        .book-carousel {
+            display: none;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        body.dystopian .books-grid {
+            display: none;
+        }
+
+        body.dystopian .book-carousel {
+            display: block;
+        }
+
+        body.dystopian .section-header {
+            display: none;
+        }
+
+        .carousel-viewport {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .carousel-slide.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .carousel-slide .book-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .carousel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .carousel-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 0, 51, 0.3);
+            background: rgba(255, 0, 51, 0.05);
+            color: #ff0033;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .carousel-btn:hover {
+            border-color: #ff0033;
+            background: rgba(255, 0, 51, 0.15);
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.2);
+        }
+
+        .carousel-counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #ff0033;
+            letter-spacing: 0.2em;
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .carousel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 0, 51, 0.15);
+            border: 1px solid rgba(255, 0, 51, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .carousel-dot.active {
+            background: #ff0033;
+            box-shadow: 0 0 10px rgba(255, 0, 51, 0.5);
+        }
+
+        .carousel-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .carousel-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            color: #ff0033;
+            text-shadow: 0 0 30px rgba(255, 0, 51, 0.3);
+            margin-bottom: 0.75rem;
+        }
+
+        .carousel-header p {
+            color: #888;
+            font-size: 1.05rem;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        .carousel-header .dystopian-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: rgba(255, 0, 51, 0.5);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .carousel-controls {
+                gap: 1rem;
+            }
+            .carousel-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -791,10 +1309,10 @@
         <div class="hero-overline">Jonas &middot; Jessan &middot; Josse &middot; Bulf &middot; Emilie</div>
         <h1>V&aring;r n&auml;sta <em>bok</em></h1>
         <p class="hero-subtitle">Sex fantastiska b&ouml;cker. Fem l&auml;sare. En bok att dela. Utforska titlarna och r&ouml;sta p&aring; din favorit.</p>
-        <a href="#books" class="hero-cta">
+        <button class="hero-cta" id="exploreBooksBtn">
             Utforska b&ouml;ckerna
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-        </a>
+        </button>
     </div>
 </section>
 
@@ -946,7 +1464,35 @@
         </div>
 
     </div>
+
+    <!-- Book Carousel (shown in dystopian mode) -->
+    <div class="book-carousel" id="bookCarousel">
+        <div class="carousel-header">
+            <span class="dystopian-label">// systemprocess::b&ouml;cker</span>
+            <h2>B&ouml;ckerna</h2>
+            <p>Varje bok &auml;r en resa. Navigera genom arkivet.</p>
+        </div>
+        <div class="carousel-viewport" id="carouselViewport"></div>
+        <div class="carousel-controls">
+            <button class="carousel-btn" id="carouselPrev">&#8592;</button>
+            <span class="carousel-counter" id="carouselCounter">01 / 06</span>
+            <button class="carousel-btn" id="carouselNext">&#8594;</button>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+    </div>
 </section>
+
+<!-- Glitch overlay elements -->
+<div class="glitch-overlay" id="glitchOverlay">
+    <div class="glitch-bar"></div>
+    <div class="glitch-bar" style="animation-delay: 0.1s"></div>
+    <div class="glitch-bar" style="animation-delay: 0.2s"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block" style="animation-delay: 0.15s"></div>
+</div>
+<div class="glitch-text-overlay" id="glitchText">
+    <span class="glitch-msg">SYSTEM OVERRIDE</span>
+</div>
 
 <!-- ════════════════ VOTING ════════════════ -->
 <section id="voting">
@@ -1352,6 +1898,114 @@
 
     // ── Init ──
     render();
+
+    // ═══════════════════════════════════════════
+    // DYSTOPIAN GLITCH TRANSITION & BOOK CAROUSEL
+    // ═══════════════════════════════════════════
+
+    let carouselIndex = 0;
+    let isDystopian = false;
+
+    // Build carousel slides from existing book cards
+    function buildCarousel() {
+        const viewport = document.getElementById('carouselViewport');
+        const dots = document.getElementById('carouselDots');
+        const cards = document.querySelectorAll('.books-grid .book-card');
+
+        viewport.innerHTML = '';
+        dots.innerHTML = '';
+
+        cards.forEach((card, i) => {
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide' + (i === 0 ? ' active' : '');
+            slide.appendChild(card.cloneNode(true));
+            viewport.appendChild(slide);
+
+            const dot = document.createElement('div');
+            dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', () => goToSlide(i));
+            dots.appendChild(dot);
+        });
+
+        updateCounter();
+    }
+
+    function goToSlide(index) {
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dotEls = document.querySelectorAll('.carousel-dot');
+        if (index < 0) index = slides.length - 1;
+        if (index >= slides.length) index = 0;
+
+        slides.forEach(s => s.classList.remove('active'));
+        dotEls.forEach(d => d.classList.remove('active'));
+
+        carouselIndex = index;
+        slides[carouselIndex].classList.add('active');
+        dotEls[carouselIndex].classList.add('active');
+        updateCounter();
+    }
+
+    function updateCounter() {
+        const counter = document.getElementById('carouselCounter');
+        const total = document.querySelectorAll('.carousel-slide').length;
+        counter.textContent = String(carouselIndex + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+    }
+
+    document.getElementById('carouselPrev').addEventListener('click', () => goToSlide(carouselIndex - 1));
+    document.getElementById('carouselNext').addEventListener('click', () => goToSlide(carouselIndex + 1));
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (!isDystopian) return;
+        if (e.key === 'ArrowLeft') goToSlide(carouselIndex - 1);
+        if (e.key === 'ArrowRight') goToSlide(carouselIndex + 1);
+    });
+
+    // The glitch transition
+    function triggerDystopianTransition() {
+        if (isDystopian) return;
+        isDystopian = true;
+
+        const overlay = document.getElementById('glitchOverlay');
+        const textOverlay = document.getElementById('glitchText');
+
+        // Start glitch
+        overlay.classList.add('active');
+        textOverlay.classList.add('active');
+        document.body.classList.add('screen-shake');
+
+        // Swap theme halfway through the glitch (when screen is darkest)
+        setTimeout(() => {
+            document.body.classList.add('dystopian');
+            buildCarousel();
+        }, 900);
+
+        // Remove screen shake
+        setTimeout(() => {
+            document.body.classList.remove('screen-shake');
+        }, 400);
+
+        // Scroll to books after transition
+        setTimeout(() => {
+            document.getElementById('books').scrollIntoView({ behavior: 'smooth' });
+        }, 1400);
+
+        // Clean up glitch overlays
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            textOverlay.classList.remove('active');
+        }, 2000);
+    }
+
+    // CTA button triggers the glitch
+    document.getElementById('exploreBooksBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (isDystopian) {
+            document.getElementById('books').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            triggerDystopianTransition();
+        }
+    });
 })();
 </script>
 
