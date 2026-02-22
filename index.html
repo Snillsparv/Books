@@ -2049,7 +2049,7 @@
             width: 0%;
             background: linear-gradient(90deg, #00ff88, #ff3355);
             border-radius: 6px;
-            transition: width 0.05s ease-out;
+            transition: width 0.12s ease-out;
         }
 
         .mic-meter-threshold {
@@ -2060,6 +2060,39 @@
             width: 2px;
             background: rgba(255, 255, 255, 0.5);
             z-index: 1;
+        }
+
+        .mic-select-wrap {
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 1rem;
+        }
+
+        .mic-select-wrap select {
+            width: 100%;
+            padding: 0.5rem 0.8rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+        }
+
+        .mic-select-wrap select:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .mic-select-wrap select option {
+            background: #1a1a2e;
+            color: #e0e0e0;
         }
 
         .game-start-btn, .game-next-btn {
@@ -2540,6 +2573,9 @@
     <div class="game-start-screen" id="gameStartScreen" style="display:none;">
         <h2>Robot Race</h2>
         <p>Robotarna &auml;r r&ouml;ststyrda! G&ouml;r ljud i mikrofonen f&ouml;r att flyga upp&aring;t. Undvik hindren &mdash; varje tr&auml;ff kostar po&auml;ng!</p>
+        <div class="mic-select-wrap" id="micSelectWrap" style="display:none;">
+            <select id="micSelect"></select>
+        </div>
         <div class="mic-meter-wrap" id="micMeterWrap">
             <span class="mic-meter-label" id="micMeterLabel">Aktiverar mikrofon...</span>
             <div class="mic-meter-bar"><div class="mic-meter-fill" id="micMeterFill"></div><div class="mic-meter-threshold"></div></div>
@@ -3372,57 +3408,126 @@ function revealBook(btn) {
         };
 
         let micMeterRAF = null;
+        let smoothedLevel = 0;
+
+        function activateMic(deviceId) {
+            const meterFill = document.getElementById('micMeterFill');
+            const meterLabel = document.getElementById('micMeterLabel');
+            meterLabel.textContent = 'Aktiverar mikrofon...';
+            meterLabel.classList.remove('active');
+            meterFill.style.width = '0%';
+
+            // Stop old stream if switching device
+            if (window._micStream) {
+                window._micStream.getTracks().forEach(t => t.stop());
+            }
+            if (window._micSource) {
+                window._micSource.disconnect();
+            }
+
+            const constraints = { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
+
+            return navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                window._micStream = stream;
+                if (!window._micAudioCtx) {
+                    window._micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (window._micAudioCtx.state === 'suspended') {
+                    window._micAudioCtx.resume();
+                }
+                const source = window._micAudioCtx.createMediaStreamSource(stream);
+                window._micSource = source;
+                const analyser = window._micAudioCtx.createAnalyser();
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.8;
+                source.connect(analyser);
+                window._micAnalyser = analyser;
+                window._micData = new Uint8Array(analyser.frequencyBinCount);
+
+                meterLabel.textContent = 'Mikrofon aktiv!';
+                meterLabel.classList.add('active');
+                smoothedLevel = 0;
+                return true;
+            }).catch(() => {
+                meterLabel.textContent = 'Mikrofon ej tillgänglig';
+                meterLabel.classList.remove('active');
+                return false;
+            });
+        }
+
+        function populateMicSelect() {
+            const selectWrap = document.getElementById('micSelectWrap');
+            const select = document.getElementById('micSelect');
+            navigator.mediaDevices.enumerateDevices().then(devices => {
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                if (mics.length <= 1) { selectWrap.style.display = 'none'; return; }
+                select.innerHTML = '';
+                mics.forEach((mic, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = mic.deviceId;
+                    opt.textContent = mic.label || ('Mikrofon ' + (i + 1));
+                    select.appendChild(opt);
+                });
+                // Select current device if known
+                if (window._micStream) {
+                    const track = window._micStream.getAudioTracks()[0];
+                    if (track) {
+                        const settings = track.getSettings();
+                        if (settings.deviceId) select.value = settings.deviceId;
+                    }
+                }
+                selectWrap.style.display = '';
+            }).catch(() => { selectWrap.style.display = 'none'; });
+
+            select.onchange = () => {
+                activateMic(select.value).then(() => startMeterLoop());
+            };
+        }
+
+        function startMeterLoop() {
+            if (micMeterRAF) { cancelAnimationFrame(micMeterRAF); micMeterRAF = null; }
+            const meterFill = document.getElementById('micMeterFill');
+            const analyser = window._micAnalyser;
+            const dataArray = window._micData;
+            if (!analyser || !dataArray) return;
+
+            function animateMeter() {
+                if (startScreen.style.display === 'none') {
+                    micMeterRAF = null;
+                    return;
+                }
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                const raw = sum / dataArray.length / 255;
+                // Smooth: rise fast, fall slow
+                if (raw > smoothedLevel) {
+                    smoothedLevel += (raw - smoothedLevel) * 0.4;
+                } else {
+                    smoothedLevel += (raw - smoothedLevel) * 0.15;
+                }
+                meterFill.style.width = (smoothedLevel * 100) + '%';
+                micMeterRAF = requestAnimationFrame(animateMeter);
+            }
+            micMeterRAF = requestAnimationFrame(animateMeter);
+        }
 
         function initMicMeter() {
             if (micMeterRAF) { cancelAnimationFrame(micMeterRAF); micMeterRAF = null; }
-            const meterFill = document.getElementById('micMeterFill');
-            const meterLabel = document.getElementById('micMeterLabel');
-
-            function setupMicMeter(analyser, dataArray) {
-                meterLabel.textContent = 'Mikrofon aktiv!';
-                meterLabel.classList.add('active');
-
-                function animateMeter() {
-                    if (startScreen.style.display === 'none') {
-                        micMeterRAF = null;
-                        return;
-                    }
-                    analyser.getByteFrequencyData(dataArray);
-                    let sum = 0;
-                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-                    const level = sum / dataArray.length / 255;
-                    meterFill.style.width = (level * 100) + '%';
-                    micMeterRAF = requestAnimationFrame(animateMeter);
-                }
-                micMeterRAF = requestAnimationFrame(animateMeter);
-            }
 
             if (!window._micAudioCtx) {
-                meterLabel.textContent = 'Aktiverar mikrofon...';
-                meterLabel.classList.remove('active');
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                    window._micStream = stream;
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    window._micAudioCtx = audioCtx;
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    const analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 256;
-                    analyser.smoothingTimeConstant = 0.3;
-                    source.connect(analyser);
-                    window._micAnalyser = analyser;
-                    window._micData = new Uint8Array(analyser.frequencyBinCount);
-                    setupMicMeter(analyser, window._micData);
-                }).catch(() => {
-                    meterLabel.textContent = 'Mikrofon ej tillgänglig';
-                    meterLabel.classList.remove('active');
+                activateMic(null).then(ok => {
+                    if (ok) {
+                        populateMicSelect();
+                        startMeterLoop();
+                    }
                 });
             } else {
                 if (window._micAudioCtx.state === 'suspended') {
                     window._micAudioCtx.resume();
                 }
-                meterLabel.textContent = 'Mikrofon aktiv!';
-                meterLabel.classList.add('active');
-                setupMicMeter(window._micAnalyser, window._micData);
+                populateMicSelect();
+                startMeterLoop();
             }
         }
 
@@ -3551,39 +3656,22 @@ function revealBook(btn) {
             canvas.addEventListener('touchstart', onTouchStart);
             canvas.addEventListener('touchend', onTouchEnd);
 
-            // ── Voice control via microphone ──
-            let micStream = null;
-            let micAnalyser = null;
-            let micData = null;
-            let micActive = false;
+            // ── Voice control via microphone (already initialized from start screen) ──
+            let micAnalyser = window._micAnalyser || null;
+            let micData = window._micData || null;
+            let micActive = !!(micAnalyser && micData);
 
-            if (!window._micAudioCtx) {
-                // Only request mic once; reuse across players
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                    window._micStream = stream;
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    window._micAudioCtx = audioCtx;
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    const analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 256;
-                    analyser.smoothingTimeConstant = 0.3;
-                    source.connect(analyser);
-                    window._micAnalyser = analyser;
-                    window._micData = new Uint8Array(analyser.frequencyBinCount);
-                    micAnalyser = analyser;
-                    micData = window._micData;
-                    micActive = true;
-                }).catch(() => {});
-            } else {
-                micAnalyser = window._micAnalyser;
-                micData = window._micData;
-                micActive = true;
-                if (window._micAudioCtx.state === 'suspended') {
-                    window._micAudioCtx.resume();
-                }
+            if (window._micAudioCtx && window._micAudioCtx.state === 'suspended') {
+                window._micAudioCtx.resume();
             }
 
             function getMicLevel() {
+                // Pick up analyser if it was set up after game started
+                if (!micActive && window._micAnalyser) {
+                    micAnalyser = window._micAnalyser;
+                    micData = window._micData;
+                    micActive = true;
+                }
                 if (!micActive || !micAnalyser || !micData) return 0;
                 micAnalyser.getByteFrequencyData(micData);
                 let sum = 0;
