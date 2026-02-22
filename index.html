@@ -730,6 +730,118 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
+        /* ── Robot avatars ── */
+        .robot-panel {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .robot-avatar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .robot-avatar.voting-now {
+            transform: scale(1.15);
+        }
+
+        .robot-avatar.voting-now .robot-img-wrap {
+            box-shadow: 0 0 20px rgba(201, 168, 76, 0.5), 0 0 40px rgba(201, 168, 76, 0.2);
+            border-color: var(--gold);
+        }
+
+        .robot-img-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .robot-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+
+        .robot-avatar .robot-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.03em;
+            transition: color 0.3s ease;
+        }
+
+        .robot-avatar.voting-now .robot-name {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .robot-avatar.has-voted .robot-img-wrap {
+            border-color: rgba(201, 168, 76, 0.4);
+        }
+
+        .robot-avatar.has-voted .robot-name::after {
+            content: ' \2713';
+            color: var(--gold);
+        }
+
+        .robot-speech {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+            max-width: 90px;
+            text-align: center;
+            min-height: 1.2em;
+        }
+
+        .winner-robots {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .winner-robots .robot-img-wrap {
+            width: 70px;
+            height: 70px;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(201, 168, 76, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .robot-img-wrap {
+                width: 60px;
+                height: 60px;
+            }
+            .robot-panel {
+                gap: 0.8rem;
+            }
+        }
+
+        /* Multi-select checkbox style */
+        .vote-option .vote-radio {
+            border-radius: 6px;
+        }
+        .vote-option.selected .vote-radio {
+            border-radius: 6px;
+        }
+        .vote-option .vote-radio-inner {
+            border-radius: 2px;
+            width: 10px;
+            height: 10px;
+        }
+
         /* ── Footer ── */
         footer {
             text-align: center;
@@ -1085,6 +1197,28 @@
         body.dystopian .step-dot.completed .step-num {
             background: #ff0033;
             color: #0a0a0a;
+        }
+
+        body.dystopian .robot-avatar.voting-now .robot-img-wrap {
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.5), 0 0 40px rgba(255, 0, 51, 0.2);
+            border-color: #ff0033;
+        }
+
+        body.dystopian .robot-avatar.voting-now .robot-name {
+            color: #ff0033;
+        }
+
+        body.dystopian .robot-avatar.has-voted .robot-img-wrap {
+            border-color: rgba(255, 0, 51, 0.4);
+        }
+
+        body.dystopian .robot-avatar.has-voted .robot-name::after {
+            color: #ff0033;
+        }
+
+        body.dystopian .winner-robots .robot-img-wrap {
+            border-color: #ff0033;
+            box-shadow: 0 0 15px rgba(255, 0, 51, 0.3);
         }
 
         body.dystopian .result-bar-fill {
@@ -1891,11 +2025,13 @@
 <section id="voting">
     <div class="section-header">
         <h2>R&ouml;stningen</h2>
-        <p>Varje omg&aring;ng elimineras boken med f&auml;rst r&ouml;ster. Alla r&ouml;star, sedan g&aring;r vi vidare &mdash; tills en bok st&aring;r kvar.</p>
+        <p>Tre rundor. Varje runda v&auml;ljer alla sina favoriter &mdash; b&ouml;ckerna med f&auml;rst r&ouml;ster sl&aring;s ut.</p>
     </div>
 
     <div class="voting-container">
         <div class="steps-indicator" id="stepsIndicator"></div>
+
+        <div class="robot-panel" id="robotPanel"></div>
 
         <div class="voter-select-panel">
             <label>Vem r&ouml;star?</label>
@@ -1914,6 +2050,7 @@
             <p>Bokcirkeln har valt</p>
             <div class="winner-book-title" id="winnerTitle"></div>
             <div class="winner-book-author" id="winnerAuthor"></div>
+            <div class="winner-robots" id="winnerRobots"></div>
             <h3>Grattis &mdash; vi har en bok!</h3>
         </div>
 
@@ -1944,8 +2081,23 @@
 
     const MEMBERS = ['Jonas', 'Jessan', 'Josse', 'Bulf', 'Emilie'];
 
+    // Robot image paths per member and expression
+    const ROBOT_IMAGES = {
+        Jonas:  { neutral: 'Robotar/jonas.webp', glad: 'Robotar/jonas.webp', ledsen: 'Robotar/jonas.webp', radd: 'Robotar/jonas.webp', lys: 'Robotar/jonas_lys.webp' },
+        Jessan: { neutral: 'Robotar/jessan.webp', glad: 'Robotar/jessan_glad.webp', ledsen: 'Robotar/jessan_ledsen.webp', radd: 'Robotar/jessan_r\u00e4dd.webp' },
+        Josse:  { neutral: 'Robotar/josse.webp', glad: 'Robotar/josse_glad.webp', ledsen: 'Robotar/josse_ledsen.png', radd: 'Robotar/josse_r\u00e4dd.webp' },
+        Bulf:   { neutral: 'Robotar/bulf.png', glad: 'Robotar/bulf_glad.webp', ledsen: 'Robotar/bulf_ledsen.webp', radd: 'Robotar/bulf_r\u00e4dd.webp' },
+        Emilie: { neutral: 'Robotar/emilie.webp', glad: 'Robotar/emilie_glad.webp', ledsen: 'Robotar/emilie_ledsen.webp', radd: 'Robotar/emilie_r\u00e4dd.png' }
+    };
+
+    // How many picks per round (round 1 = pick 3, round 2 = pick 2, round 3 = pick 1)
+    const PICKS_PER_ROUND = [3, 2, 1];
+    const TOTAL_ROUNDS = 3;
+
     // ── State ──
     let state = loadState() || createFreshState();
+    if (!state.robotMood) state.robotMood = {};
+    if (!state.selectedBooks) state.selectedBooks = [];
 
     function createFreshState() {
         return {
@@ -1953,27 +2105,29 @@
             rounds: [],
             eliminatedBooks: [],
             selectedVoter: null,
-            selectedBook: null,
+            selectedBooks: [],
             finished: false,
-            winner: null
+            winner: null,
+            lastEliminated: [],
+            robotMood: {}
         };
     }
 
     function loadState() {
         try {
-            const saved = localStorage.getItem('bookclub_vote_state');
+            const saved = localStorage.getItem('bookclub_vote_state_v2');
             return saved ? JSON.parse(saved) : null;
         } catch(e) { return null; }
     }
 
     function saveState() {
         try {
-            localStorage.setItem('bookclub_vote_state', JSON.stringify(state));
+            localStorage.setItem('bookclub_vote_state_v2', JSON.stringify(state));
         } catch(e) {}
     }
 
-    function getTotalRounds() {
-        return BOOKS.length - 1; // 5 rounds to go from 6 to 1
+    function getCurrentPicks() {
+        return PICKS_PER_ROUND[state.currentRound] || 1;
     }
 
     function getCurrentRoundData() {
@@ -1996,17 +2150,68 @@
         return getRoundVoters().length === MEMBERS.length;
     }
 
+    // ── Determine robot expression ──
+    function getRobotExpression(name) {
+        if (state.robotMood && state.robotMood[name]) return state.robotMood[name];
+        return 'neutral';
+    }
+
+    function getRobotImage(name) {
+        const expr = getRobotExpression(name);
+        const images = ROBOT_IMAGES[name];
+        if (name === 'Jonas' && expr === 'glad') return images.lys;
+        return images[expr] || images.neutral;
+    }
+
+    // ── Render robot panel ──
+    function renderRobots() {
+        const panel = document.getElementById('robotPanel');
+        panel.innerHTML = '';
+        const roundVoters = getRoundVoters();
+
+        MEMBERS.forEach(name => {
+            const avatar = document.createElement('div');
+            avatar.className = 'robot-avatar';
+            const hasVoted = roundVoters.includes(name);
+            const isVoting = state.selectedVoter === name && !hasVoted;
+
+            if (isVoting) avatar.classList.add('voting-now');
+            if (hasVoted) avatar.classList.add('has-voted');
+
+            const expr = getRobotExpression(name);
+            const speech = document.createElement('div');
+            speech.className = 'robot-speech';
+
+            if (state.finished) {
+                speech.textContent = '';
+            } else if (isVoting) {
+                speech.textContent = 'Hmm...';
+            } else if (hasVoted && !allVoted()) {
+                speech.textContent = 'Klar!';
+            }
+
+            avatar.innerHTML = `
+                <div class="robot-img-wrap">
+                    <img src="${getRobotImage(name)}" alt="${name}">
+                </div>
+                <span class="robot-name">${name}</span>
+            `;
+            avatar.appendChild(speech);
+            panel.appendChild(avatar);
+        });
+    }
+
     // ── Render steps ──
     function renderSteps() {
         const container = document.getElementById('stepsIndicator');
         container.innerHTML = '';
-        const total = getTotalRounds();
-        for (let i = 0; i < total; i++) {
+        const roundLabels = ['Runda 1 \u2014 v\u00e4lj 3', 'Runda 2 \u2014 v\u00e4lj 2', 'Runda 3 \u2014 v\u00e4lj 1'];
+        for (let i = 0; i < TOTAL_ROUNDS; i++) {
             const dot = document.createElement('div');
             dot.className = 'step-dot';
             if (i === state.currentRound && !state.finished) dot.classList.add('active');
             if (i < state.currentRound) dot.classList.add('completed');
-            dot.innerHTML = `<span class="step-num">${i + 1}</span> Omg\u00e5ng ${i + 1}`;
+            dot.innerHTML = `<span class="step-num">${i + 1}</span> ${roundLabels[i]}`;
             container.appendChild(dot);
         }
     }
@@ -2025,7 +2230,7 @@
             btn.innerHTML = `${name}<span class="check"> \u2713</span>`;
             btn.addEventListener('click', () => {
                 state.selectedVoter = name;
-                state.selectedBook = null;
+                state.selectedBooks = [];
                 saveState();
                 render();
             });
@@ -2033,7 +2238,7 @@
         });
     }
 
-    // ── Render vote options ──
+    // ── Render vote options (multi-select) ──
     function renderVoteOptions() {
         const container = document.getElementById('voteOptions');
         const instruction = document.getElementById('voteInstruction');
@@ -2050,10 +2255,11 @@
         container.classList.remove('hidden');
         submitBtn.classList.remove('hidden');
 
+        const picks = getCurrentPicks();
+
         if (!state.selectedVoter) {
-            instruction.innerHTML = 'V&auml;lj ditt namn ovan f&ouml;r att r&ouml;sta.';
+            instruction.innerHTML = 'V\u00e4lj ditt namn ovan f\u00f6r att r\u00f6sta.';
             submitBtn.disabled = true;
-            // Show books but not interactive
             getActiveBooks().forEach(book => {
                 const opt = createVoteOption(book, true);
                 container.appendChild(opt);
@@ -2065,7 +2271,7 @@
         const hasVoted = round.votes[state.selectedVoter] !== undefined;
 
         if (hasVoted && !allVoted()) {
-            instruction.innerHTML = `<strong>${state.selectedVoter}</strong> har r&ouml;stat! V&auml;nta p&aring; att alla ska r&ouml;sta.`;
+            instruction.innerHTML = `<strong>${state.selectedVoter}</strong> har r\u00f6stat! V\u00e4nta p\u00e5 att alla ska r\u00f6sta.`;
             submitBtn.disabled = true;
             getActiveBooks().forEach(book => {
                 const opt = createVoteOption(book, true);
@@ -2075,14 +2281,17 @@
         }
 
         if (allVoted()) {
-            instruction.innerHTML = 'Alla har r&ouml;stat! Tryck f&ouml;r att se resultatet.';
+            instruction.innerHTML = 'Alla har r\u00f6stat! Tryck f\u00f6r att se resultatet.';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Visa resultat';
             container.classList.add('hidden');
+            // Everyone nervous before reveal!
+            MEMBERS.forEach(m => { state.robotMood[m] = 'radd'; });
+            renderRobots();
             return;
         }
 
-        instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, vilken bok vill du l&auml;sa mest?`;
+        instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter:`;
         submitBtn.textContent = 'R\u00f6sta';
 
         getActiveBooks().forEach(book => {
@@ -2090,13 +2299,14 @@
             container.appendChild(opt);
         });
 
-        submitBtn.disabled = !state.selectedBook;
+        submitBtn.disabled = state.selectedBooks.length !== picks;
     }
 
     function createVoteOption(book, disabled) {
         const opt = document.createElement('div');
         opt.className = 'vote-option';
-        if (state.selectedBook === book.id) opt.classList.add('selected');
+        const isSelected = state.selectedBooks.includes(book.id);
+        if (isSelected) opt.classList.add('selected');
         opt.innerHTML = `
             <div class="vote-radio"><div class="vote-radio-inner"></div></div>
             <div class="vote-option-info">
@@ -2106,7 +2316,17 @@
         `;
         if (!disabled) {
             opt.addEventListener('click', () => {
-                state.selectedBook = book.id;
+                const picks = getCurrentPicks();
+                const idx = state.selectedBooks.indexOf(book.id);
+                if (idx >= 0) {
+                    state.selectedBooks.splice(idx, 1);
+                } else if (state.selectedBooks.length < picks) {
+                    state.selectedBooks.push(book.id);
+                } else {
+                    // Replace oldest selection
+                    state.selectedBooks.shift();
+                    state.selectedBooks.push(book.id);
+                }
                 saveState();
                 render();
             });
@@ -2125,13 +2345,15 @@
             return;
         }
 
-        if (!state.selectedVoter || !state.selectedBook) return;
+        if (!state.selectedVoter) return;
+        const picks = getCurrentPicks();
+        if (state.selectedBooks.length !== picks) return;
 
         const round = getCurrentRoundData();
         if (round.votes[state.selectedVoter] !== undefined) return;
 
-        round.votes[state.selectedVoter] = state.selectedBook;
-        state.selectedBook = null;
+        round.votes[state.selectedVoter] = [...state.selectedBooks];
+        state.selectedBooks = [];
 
         saveState();
         render();
@@ -2142,35 +2364,62 @@
         const round = getCurrentRoundData();
         const activeBooks = getActiveBooks();
 
-        // Count votes
+        // Count votes (each member voted for multiple books)
         const counts = {};
         activeBooks.forEach(b => counts[b.id] = 0);
-        Object.values(round.votes).forEach(bookId => {
-            counts[bookId] = (counts[bookId] || 0) + 1;
+        Object.values(round.votes).forEach(bookIds => {
+            bookIds.forEach(bookId => {
+                counts[bookId] = (counts[bookId] || 0) + 1;
+            });
         });
 
-        // Find min votes
-        const minVotes = Math.min(...Object.values(counts));
-        const losers = Object.keys(counts).filter(id => counts[id] === minVotes);
-
-        // If there's a tie for last, eliminate the first one alphabetically (deterministic)
-        const eliminated = losers[0];
-        state.eliminatedBooks.push(eliminated);
-
         round.counts = counts;
+
+        // Determine how many to eliminate this round
+        // Round 1: 6 books -> pick 3 -> eliminate bottom books to get to 4
+        // Round 2: 4 books -> pick 2 -> eliminate bottom books to get to 2
+        // Round 3: 2 books -> pick 1 -> eliminate bottom to get winner
+        const targetRemaining = state.currentRound === 0 ? 4 : state.currentRound === 1 ? 2 : 1;
+        const toEliminate = activeBooks.length - targetRemaining;
+
+        // Sort by votes ascending to find the books to eliminate
+        const sorted = Object.entries(counts).sort((a, b) => a[1] - b[1]);
+        const eliminated = sorted.slice(0, toEliminate).map(e => e[0]);
+
+        eliminated.forEach(id => state.eliminatedBooks.push(id));
         round.eliminated = eliminated;
+        state.lastEliminated = eliminated;
+
+        // Update robot moods based on results
+        const newMood = {};
+        MEMBERS.forEach(name => {
+            const memberVotes = round.votes[name] || [];
+            const lostAFav = memberVotes.some(id => eliminated.includes(id));
+            const keptAll = memberVotes.every(id => !eliminated.includes(id));
+
+            if (lostAFav) {
+                newMood[name] = 'ledsen';
+            } else if (keptAll) {
+                newMood[name] = 'glad';
+            } else {
+                newMood[name] = 'neutral';
+            }
+        });
+        state.robotMood = newMood;
 
         // Check if we have a winner
         const remaining = getActiveBooks();
         if (remaining.length === 1) {
             state.finished = true;
             state.winner = remaining[0];
+            // Everyone happy for the winner!
+            MEMBERS.forEach(name => { state.robotMood[name] = 'glad'; });
         } else {
             state.currentRound++;
         }
 
         state.selectedVoter = null;
-        state.selectedBook = null;
+        state.selectedBooks = [];
         saveState();
         render();
         renderResults();
@@ -2188,13 +2437,13 @@
         }
 
         panel.classList.add('visible');
+        const roundLabels = ['Runda 1', 'Runda 2', 'Runda 3'];
 
         completedRounds.forEach((round, i) => {
             const div = document.createElement('div');
             div.className = 'round-result';
 
-            const eliminatedBook = BOOKS.find(b => b.id === round.eliminated);
-            let html = `<h4>Omg\u00e5ng ${i + 1}</h4>`;
+            let html = `<h4>${roundLabels[i]}</h4>`;
 
             // Sort by votes descending
             const sorted = Object.entries(round.counts).sort((a, b) => b[1] - a[1]);
@@ -2202,8 +2451,8 @@
 
             sorted.forEach(([bookId, votes]) => {
                 const book = BOOKS.find(b => b.id === bookId);
-                const isEliminated = bookId === round.eliminated;
-                const pct = maxVotes > 0 ? (votes / MEMBERS.length) * 100 : 0;
+                const isEliminated = round.eliminated.includes(bookId);
+                const pct = maxVotes > 0 ? (votes / (MEMBERS.length * PICKS_PER_ROUND[i])) * 100 : 0;
                 html += `
                     <div class="result-bar-container ${isEliminated ? 'eliminated' : ''}">
                         <div class="result-bar-label">
@@ -2211,7 +2460,7 @@
                             <span>${votes} r\u00f6st${votes !== 1 ? 'er' : ''}</span>
                         </div>
                         <div class="result-bar">
-                            <div class="result-bar-fill" style="width: ${pct}%"></div>
+                            <div class="result-bar-fill" style="width: ${Math.min(pct, 100)}%"></div>
                         </div>
                     </div>
                 `;
@@ -2221,7 +2470,6 @@
             panel.appendChild(div);
         });
 
-        // Animate bars
         requestAnimationFrame(() => {
             panel.querySelectorAll('.result-bar-fill').forEach(bar => {
                 bar.style.width = bar.style.width;
@@ -2237,6 +2485,17 @@
             document.getElementById('winnerTitle').textContent = state.winner.title;
             document.getElementById('winnerAuthor').textContent = state.winner.author;
             document.getElementById('submitVoteBtn').classList.add('hidden');
+
+            // Show all robots happy
+            const robotsContainer = document.getElementById('winnerRobots');
+            robotsContainer.innerHTML = '';
+            MEMBERS.forEach(name => {
+                const wrap = document.createElement('div');
+                wrap.className = 'robot-img-wrap';
+                wrap.innerHTML = `<img src="${ROBOT_IMAGES[name].glad || ROBOT_IMAGES[name].neutral}" alt="${name}">`;
+                if (name === 'Jonas') wrap.innerHTML = `<img src="${ROBOT_IMAGES[name].lys}" alt="${name}">`;
+                robotsContainer.appendChild(wrap);
+            });
         } else {
             panel.classList.remove('visible');
         }
@@ -2245,6 +2504,7 @@
     // ── Master render ──
     function render() {
         renderSteps();
+        renderRobots();
         renderVoterButtons();
         renderVoteOptions();
         renderResults();
