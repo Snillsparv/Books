@@ -3732,7 +3732,7 @@ function revealBook(btn) {
                         cleanup();
                         scores[playerName] = score;
                         playerIndex++;
-                        showScores();
+                        playPostFilm();
                         return 'done';
                     }
                     return;
@@ -3750,7 +3750,7 @@ function revealBook(btn) {
                         if (playerIndex < players.length) {
                             runGame(players[playerIndex]);
                         } else {
-                            showScores();
+                            playPostFilm();
                         }
                         return 'done';
                     }
@@ -4191,7 +4191,22 @@ function revealBook(btn) {
             requestAnimationFrame(gameLoop);
         }
 
+        function playPostFilm() {
+            startScreen.style.display = 'none';
+            videoScreen2.style.display = '';
+            video2.play();
+            function goToScores() {
+                video2.onended = null;
+                videoScreen2.onclick = null;
+                videoScreen2.style.display = 'none';
+                showScores();
+            }
+            video2.onended = goToScores;
+            videoScreen2.onclick = () => { video2.pause(); goToScores(); };
+        }
+
         function showScores() {
+            videoScreen2.style.display = 'none';
             startScreen.style.display = 'none';
             scoresScreen.style.display = '';
 
@@ -4214,23 +4229,9 @@ function revealBook(btn) {
             document.getElementById('gameNextBtn').textContent = 'Vidare';
             document.getElementById('gameNextBtn').onclick = () => {
                 scoresScreen.style.display = 'none';
-                // Play film_2 after scores
-                videoScreen2.style.display = '';
-                video2.play();
-                video2.onended = () => {
-                    videoScreen2.style.display = 'none';
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
-                };
-                videoScreen2.onclick = () => {
-                    video2.pause();
-                    video2.onended = null;
-                    videoScreen2.style.display = 'none';
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
-                };
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+                document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
             };
         }
     }
