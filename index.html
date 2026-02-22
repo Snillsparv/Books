@@ -671,6 +671,16 @@
             display: block;
         }
 
+        .winner-cover-img {
+            max-width: 220px;
+            max-height: 330px;
+            border-radius: 8px;
+            box-shadow: 0 8px 40px rgba(201, 168, 76, 0.3), 0 0 60px rgba(201, 168, 76, 0.15);
+            margin: 1.5rem auto;
+            display: block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
         .winner-trophy {
             font-size: 4rem;
             margin-bottom: 1rem;
@@ -2620,6 +2630,7 @@
             <p>Bokcirkeln har valt</p>
             <div class="winner-book-title" id="winnerTitle"></div>
             <div class="winner-book-author" id="winnerAuthor"></div>
+            <img class="winner-cover-img" id="winnerCover" src="" alt="" style="display:none;">
             <div class="winner-robots" id="winnerRobots"></div>
             <h3>Grattis &mdash; vi har en bok!</h3>
         </div>
@@ -2653,12 +2664,12 @@ function revealBook(btn) {
 
     // ── Book data ──
     const BOOKS = [
-        { id: 'ishiguro', title: 'Klara och Solen', author: 'Kazuo Ishiguro' },
-        { id: 'chiang', title: 'Exhalation', author: 'Ted Chiang' },
-        { id: 'eco', title: 'Foucaults pendel', author: 'Umberto Eco' },
-        { id: 'vonnegut', title: 'Slakthus 5', author: 'Kurt Vonnegut' },
-        { id: 'fowles', title: 'Illusionisten', author: 'John Fowles' },
-        { id: 'gibson', title: 'Neuromancer', author: 'William Gibson' }
+        { id: 'ishiguro', title: 'Klara och Solen', author: 'Kazuo Ishiguro', cover: 'Böcker/klara och solen.webp' },
+        { id: 'chiang', title: 'Exhalation', author: 'Ted Chiang', cover: 'Böcker/exhalation.webp' },
+        { id: 'eco', title: 'Foucaults pendel', author: 'Umberto Eco', cover: 'Böcker/foucaults pendel.webp' },
+        { id: 'vonnegut', title: 'Slakthus 5', author: 'Kurt Vonnegut', cover: 'Böcker/slakthus 5.webp' },
+        { id: 'fowles', title: 'Illusionisten', author: 'John Fowles', cover: 'Böcker/illusionisten.webp' },
+        { id: 'gibson', title: 'Neuromancer', author: 'William Gibson', cover: 'Böcker/neuromancer.webp' }
     ];
 
     const MEMBERS = ['Jonas', 'Jessan', 'Josse', 'Bulf', 'Emilie'];
@@ -2965,6 +2976,13 @@ function revealBook(btn) {
         state.selectedVoter = nextVoter || null;
 
         saveState();
+
+        // If everyone has voted, automatically process the round
+        if (allVoted()) {
+            processRound();
+            return;
+        }
+
         render();
     }
 
@@ -3095,6 +3113,15 @@ function revealBook(btn) {
             document.getElementById('winnerTitle').textContent = state.winner.title;
             document.getElementById('winnerAuthor').textContent = state.winner.author;
             document.getElementById('submitVoteBtn').classList.add('hidden');
+
+            // Show winner book cover
+            const winnerBook = BOOKS.find(b => b.id === state.winner.id);
+            const coverImg = document.getElementById('winnerCover');
+            if (winnerBook && winnerBook.cover) {
+                coverImg.src = winnerBook.cover;
+                coverImg.alt = winnerBook.title;
+                coverImg.style.display = '';
+            }
 
             // Show all robots happy
             const robotsContainer = document.getElementById('winnerRobots');
@@ -3558,6 +3585,7 @@ function revealBook(btn) {
 
         // Positions of waiting players in world coords
         let waitingPlayers = [];
+        let fireWorldX = 0;
 
         function initWorld() {
             W = canvas.width;
@@ -3583,6 +3611,9 @@ function revealBook(btn) {
                     active: false
                 });
             }
+
+            // Place fire at end of the last player's run
+            fireWorldX = players.length * playerSpacing;
 
             // Pre-generate some initial obstacles
             worldNextSpawnX = W * 0.6;
@@ -3636,6 +3667,12 @@ function revealBook(btn) {
             let handoffTimer = 0;
             const handoffDuration = 90;
 
+            // Fire ending state (last player)
+            let fireEnding = false;
+            let fireTimer = 0;
+            const fireDuration = 150;
+            const isLastPlayer = playerIndex === players.length - 1;
+
             // Input
             const keys = {};
             function onKeyDown(e) {
@@ -3685,6 +3722,22 @@ function revealBook(btn) {
                 const dt = Math.min((now - lastTime) / 16.67, 2);
                 lastTime = now;
 
+                // Fire ending animation (last player)
+                if (fireEnding) {
+                    fireTimer += dt;
+                    // Slow down scrolling gradually
+                    const slowdown = Math.max(0, 1 - fireTimer / (fireDuration * 0.4));
+                    worldOffset += obstSpeed * dt * slowdown;
+                    if (fireTimer >= fireDuration) {
+                        cleanup();
+                        scores[playerName] = score;
+                        playerIndex++;
+                        showScores();
+                        return 'done';
+                    }
+                    return;
+                }
+
                 // Handoff animation
                 if (handoff) {
                     handoffTimer += dt;
@@ -3704,13 +3757,19 @@ function revealBook(btn) {
                     return;
                 }
 
-                // Timer
+                // Timer — last player can also end by reaching fire
                 timeLeft -= dt * (16.67 / 1000);
                 if (timeLeft <= 0) {
                     timeLeft = 0;
-                    handoff = true;
-                    handoffTimer = 0;
-                    keys.up = false;
+                    if (isLastPlayer) {
+                        fireEnding = true;
+                        fireTimer = 0;
+                        keys.up = false;
+                    } else {
+                        handoff = true;
+                        handoffTimer = 0;
+                        keys.up = false;
+                    }
                     return;
                 }
                 document.getElementById('hudTimer').textContent = Math.ceil(timeLeft);
@@ -3749,6 +3808,14 @@ function revealBook(btn) {
                         keys.up = false;
                         return;
                     }
+                }
+
+                // Last player: check if reached the fire
+                if (isLastPlayer && robotWorldX >= fireWorldX - W * 0.3) {
+                    fireEnding = true;
+                    fireTimer = 0;
+                    keys.up = false;
+                    return;
                 }
 
                 // Obstacle collision
@@ -3853,6 +3920,61 @@ function revealBook(btn) {
                 ctx.restore();
             }
 
+            // Animated fire drawing
+            let fireFrame = 0;
+            function drawFire(cx, baseY, size) {
+                fireFrame++;
+                ctx.save();
+                // Fire glow
+                const glowR = size * 2.5;
+                const fg = ctx.createRadialGradient(cx, baseY - size * 0.3, 0, cx, baseY - size * 0.3, glowR);
+                fg.addColorStop(0, 'rgba(255, 120, 0, 0.15)');
+                fg.addColorStop(0.5, 'rgba(255, 60, 0, 0.06)');
+                fg.addColorStop(1, 'transparent');
+                ctx.fillStyle = fg;
+                ctx.fillRect(cx - glowR, baseY - size * 0.3 - glowR, glowR * 2, glowR * 2);
+
+                // Log base
+                ctx.fillStyle = '#3a1a00';
+                ctx.fillRect(cx - size * 0.5, baseY - size * 0.08, size, size * 0.16);
+                ctx.fillRect(cx - size * 0.35, baseY - size * 0.2, size * 0.7, size * 0.12);
+
+                // Flame tongues
+                for (let i = 0; i < 7; i++) {
+                    const spread = (i / 6 - 0.5) * size * 0.7;
+                    const phase = fireFrame * 0.08 + i * 1.7;
+                    const flicker = 0.7 + 0.3 * Math.sin(phase);
+                    const h = size * (0.6 + 0.4 * flicker) * (1 - Math.abs(i / 6 - 0.5) * 1.2);
+                    const w = size * 0.18 * flicker;
+
+                    const grd = ctx.createLinearGradient(cx + spread, baseY - size * 0.15, cx + spread, baseY - size * 0.15 - h);
+                    grd.addColorStop(0, 'rgba(255, 80, 0, 0.9)');
+                    grd.addColorStop(0.3, 'rgba(255, 160, 20, 0.85)');
+                    grd.addColorStop(0.7, 'rgba(255, 220, 50, 0.6)');
+                    grd.addColorStop(1, 'rgba(255, 255, 100, 0)');
+                    ctx.fillStyle = grd;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + spread - w, baseY - size * 0.15);
+                    ctx.quadraticCurveTo(cx + spread - w * 0.5, baseY - size * 0.15 - h * 0.6, cx + spread + Math.sin(phase * 1.3) * w * 0.3, baseY - size * 0.15 - h);
+                    ctx.quadraticCurveTo(cx + spread + w * 0.5, baseY - size * 0.15 - h * 0.6, cx + spread + w, baseY - size * 0.15);
+                    ctx.fill();
+                }
+
+                // Sparks
+                for (let i = 0; i < 3; i++) {
+                    const sparkPhase = fireFrame * 0.05 + i * 2.1;
+                    const sparkLife = (sparkPhase % 1);
+                    const sparkX = cx + Math.sin(sparkPhase * 3) * size * 0.3;
+                    const sparkY = baseY - size * 0.3 - sparkLife * size * 1.2;
+                    const sparkAlpha = (1 - sparkLife) * 0.8;
+                    ctx.fillStyle = `rgba(255, ${180 + Math.random() * 75 | 0}, 50, ${sparkAlpha})`;
+                    ctx.beginPath();
+                    ctx.arc(sparkX, sparkY, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
             function draw() {
                 ctx.clearRect(0, 0, W, H);
 
@@ -3944,7 +4066,67 @@ function revealBook(btn) {
                     ctx.restore();
                 }
 
-                if (handoff) {
+                // Draw fire in the world (visible for last player)
+                if (isLastPlayer) {
+                    const fireScreenX = fireWorldX - worldOffset;
+                    if (fireScreenX > -200 && fireScreenX < W + 200) {
+                        drawFire(fireScreenX, H - 10, Math.min(100, W * 0.12));
+                    }
+                }
+
+                if (fireEnding) {
+                    // Fire ending: robot flies toward fire, baton thrown in
+                    const t = fireTimer / fireDuration;
+                    const fireScreenX = fireWorldX - worldOffset;
+                    const fireSize = Math.min(100, W * 0.12);
+
+                    // Robot moves toward fire
+                    const robotEndX = fireScreenX - fireSize * 0.8;
+                    const rx = robotScreenX + (robotEndX - robotScreenX) * Math.min(1, t * 2.5);
+                    const ry = robotY + (H * 0.55 - robotY) * Math.min(1, t * 2);
+                    drawRobot(rx, ry, playerName, t < 0.3, 0, t < 0.3);
+
+                    // Baton arcs into the fire
+                    if (t >= 0.3 && t < 0.7 && imgBaton.complete && imgBaton.naturalWidth) {
+                        const bt = (t - 0.3) / 0.4;
+                        const batonS = robotW * 0.45 * (1 - bt * 0.5);
+                        const bx = rx + robotW * 0.35 + (fireScreenX - rx - robotW * 0.35) * bt;
+                        const by = ry + robotBodyH * 0.15 + Math.sin(bt * Math.PI) * -60 + bt * (H * 0.45 - ry);
+                        ctx.save();
+                        ctx.globalAlpha = 1 - bt * 0.5;
+                        ctx.shadowColor = '#ff6600';
+                        ctx.shadowBlur = 20 * bt;
+                        ctx.drawImage(imgBaton, bx - batonS / 2, by - batonS / 2, batonS, batonS);
+                        ctx.restore();
+                    }
+
+                    // Flash when baton hits fire
+                    if (t >= 0.65 && t < 0.8) {
+                        const flashT = (t - 0.65) / 0.15;
+                        ctx.save();
+                        ctx.globalAlpha = (1 - flashT) * 0.4;
+                        ctx.fillStyle = '#ff8800';
+                        ctx.fillRect(0, 0, W, H);
+                        ctx.restore();
+                    }
+
+                    // "Bilden förstörd!" text
+                    if (t > 0.5) {
+                        const textAlpha = Math.min(1, (t - 0.5) * 4);
+                        ctx.save();
+                        ctx.globalAlpha = textAlpha;
+                        ctx.font = `bold ${Math.min(56, W * 0.07)}px 'Playfair Display', serif`;
+                        ctx.fillStyle = '#ff8800';
+                        ctx.textAlign = 'center';
+                        ctx.shadowColor = '#ff4400';
+                        ctx.shadowBlur = 30;
+                        ctx.fillText('Bilden förstörd!', W / 2, H * 0.25);
+                        ctx.restore();
+                    }
+
+                    // Bigger fire during ending
+                    drawFire(fireScreenX, H - 10, fireSize * (1 + t * 0.8));
+                } else if (handoff) {
                     const t = handoffTimer / handoffDuration;
                     const ease = t * t * (3 - 2 * t);
                     const nextPlayer = playerIndex + 1 < players.length ? players[playerIndex + 1] : null;
@@ -3954,8 +4136,6 @@ function revealBook(btn) {
                     const nextScreenX = nextWP ? nextWP.worldX - worldOffset : robotScreenX;
 
                     // Current robot stays at position, baton transfers
-                    // First half: robots side by side, baton floats to next
-                    // Second half: old robot fades, new robot becomes active
                     const hasBatonStill = t < 0.4;
                     drawRobot(robotScreenX, robotY, playerName, false, 0, hasBatonStill);
 
