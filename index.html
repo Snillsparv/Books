@@ -1155,63 +1155,210 @@
             97% { opacity: 1; }
         }
 
-        /* ── BOOK CAROUSEL (dystopian mode) ── */
-        .book-carousel {
+        /* ── FULL-PAGE BOOK PAGES (dystopian mode) ── */
+        .book-pages-container {
             display: none;
-            max-width: 700px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        body.dystopian .books-grid {
-            display: none;
-        }
-
-        body.dystopian .book-carousel {
-            display: block;
-        }
-
-        body.dystopian .section-header {
-            display: none;
-        }
-
-        .carousel-viewport {
-            position: relative;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 100;
             overflow: hidden;
         }
 
-        .carousel-slide {
-            display: none;
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-
-        .carousel-slide.active {
+        .book-pages-container.active {
             display: block;
-            opacity: 1;
-            transform: scale(1);
         }
 
-        .carousel-slide .book-card {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .carousel-controls {
+        .book-page {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%;
+            height: 100vh;
+            background-image: url('bg_röd.png');
+            background-size: cover;
+            background-position: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: scale(0.97);
+            padding: 2rem;
         }
 
-        .carousel-btn {
+        .book-page.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* Dark overlay on bg for readability */
+        .book-page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 0;
+        }
+
+        /* Scanline effect on book pages */
+        .book-page::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.06) 2px,
+                rgba(0, 0, 0, 0.06) 4px
+            );
+        }
+
+        .book-page-inner {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        .book-page-cover {
+            flex-shrink: 0;
+            width: 300px;
+        }
+
+        .book-page-cover img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 0, 51, 0.15);
+            transition: transform 0.4s ease;
+        }
+
+        .book-page-cover img:hover {
+            transform: scale(1.03);
+        }
+
+        .book-page-info {
+            flex: 1;
+            color: #e0e0e0;
+        }
+
+        .book-page-info .page-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: rgba(255, 0, 51, 0.6);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .book-page-info h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.15;
+            margin-bottom: 0.4rem;
+            text-shadow: 0 0 40px rgba(255, 0, 51, 0.2);
+        }
+
+        .book-page-info .page-author {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #ff3355;
+            margin-bottom: 1.5rem;
+        }
+
+        .book-page-info .page-author .page-year {
+            font-style: normal;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
+            margin-left: 0.5rem;
+        }
+
+        .book-page-info .page-description {
+            font-size: 1rem;
+            line-height: 1.85;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 1.5rem;
+            max-width: 550px;
+        }
+
+        .book-page-info .page-quote {
+            border-left: 3px solid #ff0033;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 0, 51, 0.06);
+            border-radius: 0 8px 8px 0;
+            max-width: 550px;
+        }
+
+        .book-page-info .page-quote p {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        .book-page-info .page-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .book-page-info .page-tag {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.2);
+            border-radius: 50px;
+            color: #ff3355;
+            font-weight: 500;
+        }
+
+        .book-page-info .page-genre {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+            background: rgba(255, 0, 51, 0.1);
+            color: #ff0033;
+        }
+
+        /* Page navigation */
+        .page-nav {
+            position: fixed;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .page-nav.active {
+            display: flex;
+        }
+
+        .page-nav-btn {
             width: 50px;
             height: 50px;
             border-radius: 50%;
             border: 2px solid rgba(255, 0, 51, 0.3);
-            background: rgba(255, 0, 51, 0.05);
+            background: rgba(0, 0, 0, 0.6);
             color: #ff0033;
             font-size: 1.3rem;
             cursor: pointer;
@@ -1220,29 +1367,29 @@
             align-items: center;
             justify-content: center;
             font-family: 'JetBrains Mono', monospace;
+            backdrop-filter: blur(10px);
         }
 
-        .carousel-btn:hover {
+        .page-nav-btn:hover {
             border-color: #ff0033;
             background: rgba(255, 0, 51, 0.15);
-            box-shadow: 0 0 20px rgba(255, 0, 51, 0.2);
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.3);
         }
 
-        .carousel-counter {
+        .page-nav-counter {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.9rem;
             color: #ff0033;
             letter-spacing: 0.2em;
+            text-shadow: 0 0 10px rgba(255, 0, 51, 0.3);
         }
 
-        .carousel-dots {
+        .page-nav-dots {
             display: flex;
             gap: 0.5rem;
-            justify-content: center;
-            margin-top: 1.5rem;
         }
 
-        .carousel-dot {
+        .page-nav-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
@@ -1252,51 +1399,99 @@
             transition: all 0.3s ease;
         }
 
-        .carousel-dot.active {
+        .page-nav-dot.active {
             background: #ff0033;
             box-shadow: 0 0 10px rgba(255, 0, 51, 0.5);
         }
 
-        .carousel-header {
-            text-align: center;
-            margin-bottom: 2.5rem;
+        /* Vote button on book pages */
+        .page-vote-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 2rem;
+            background: #ff0033;
+            color: #0a0a0a;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.05em;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
         }
 
-        .carousel-header h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2rem, 5vw, 3rem);
-            font-weight: 700;
-            color: #ff0033;
-            text-shadow: 0 0 30px rgba(255, 0, 51, 0.3);
-            margin-bottom: 0.75rem;
+        .page-vote-btn:hover {
+            background: #ff3355;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 0, 51, 0.3);
         }
 
-        .carousel-header p {
-            color: #888;
-            font-size: 1.05rem;
-            max-width: 550px;
-            margin: 0 auto;
+        .page-vote-btn svg {
+            width: 16px;
+            height: 16px;
         }
 
-        .carousel-header .dystopian-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            letter-spacing: 0.4em;
-            text-transform: uppercase;
-            color: rgba(255, 0, 51, 0.5);
-            display: block;
-            margin-bottom: 0.5rem;
-        }
+        /* Responsive book pages */
+        @media (max-width: 900px) {
+            .book-page-inner {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+                overflow-y: auto;
+                max-height: calc(100vh - 6rem);
+                padding-bottom: 5rem;
+            }
 
-        @media (max-width: 768px) {
-            .carousel-controls {
+            .book-page-cover {
+                width: 200px;
+            }
+
+            .book-page-info .page-quote,
+            .book-page-info .page-description {
+                max-width: 100%;
+            }
+
+            .book-page-info .page-tags {
+                justify-content: center;
+            }
+
+            .page-nav {
+                bottom: 1.5rem;
                 gap: 1rem;
             }
-            .carousel-btn {
+
+            .page-nav-btn {
                 width: 42px;
                 height: 42px;
                 font-size: 1.1rem;
             }
+        }
+
+        @media (max-width: 480px) {
+            .book-page-cover {
+                width: 160px;
+            }
+
+            .book-page {
+                padding: 1.25rem;
+            }
+        }
+
+        /* Hide books section in dystopian mode */
+        body.dystopian #books {
+            display: none;
+        }
+
+        body.dystopian .hero {
+            display: none;
+        }
+
+        body.dystopian .section-header {
+            display: none;
         }
     </style>
 </head>
@@ -1465,22 +1660,189 @@
 
     </div>
 
-    <!-- Book Carousel (shown in dystopian mode) -->
-    <div class="book-carousel" id="bookCarousel">
-        <div class="carousel-header">
-            <span class="dystopian-label">// systemprocess::b&ouml;cker</span>
-            <h2>B&ouml;ckerna</h2>
-            <p>Varje bok &auml;r en resa. Navigera genom arkivet.</p>
-        </div>
-        <div class="carousel-viewport" id="carouselViewport"></div>
-        <div class="carousel-controls">
-            <button class="carousel-btn" id="carouselPrev">&#8592;</button>
-            <span class="carousel-counter" id="carouselCounter">01 / 06</span>
-            <button class="carousel-btn" id="carouselNext">&#8594;</button>
-        </div>
-        <div class="carousel-dots" id="carouselDots"></div>
-    </div>
+
 </section>
+
+<!-- ════════════════ FULL-PAGE BOOK PAGES ════════════════ -->
+<div class="book-pages-container" id="bookPagesContainer">
+
+    <!-- Page 1: Klara och Solen -->
+    <div class="book-page active" data-page="0">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/klara och solen.webp" alt="Klara och Solen">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_01</span>
+                <span class="page-genre">Litteratur &middot; Sci-fi</span>
+                <h2>Klara och Solen</h2>
+                <p class="page-author">Kazuo Ishiguro <span class="page-year">2021</span></p>
+                <p class="page-description">
+                    Ber&auml;ttad genom &ouml;gonen p&aring; Klara, en artificiell v&auml;n som observerar v&auml;rlden fr&aring;n ett skyltf&ouml;nster.
+                    Med sin ovanliga blick avsl&ouml;jar hon vad det inneb&auml;r att &auml;lska, att vara ensam och att vara m&auml;nsklig.
+                    Ishiguro skriver med en stillsam sk&ouml;nhet som sm&auml;lter hj&auml;rtat.
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;Solen v&auml;rmde alltid n&aring;gon. Det var hennes s&auml;tt att visa v&auml;nlighet.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Nobelpristagare</span>
+                    <span class="page-tag">AI &amp; m&auml;nsklighet</span>
+                    <span class="page-tag">&Ouml;mhet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Exhalation -->
+    <div class="book-page" data-page="1">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/exhalation.webp" alt="Exhalation">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_02</span>
+                <span class="page-genre">Sci-fi &middot; Noveller</span>
+                <h2>Exhalation</h2>
+                <p class="page-author">Ted Chiang <span class="page-year">2019</span></p>
+                <p class="page-description">
+                    Nio noveller som utforskar fri vilja, tidens natur och vad det inneb&auml;r att vara medveten.
+                    Ted Chiang skriver science fiction som f&aring;r en att stanna upp mitt i en mening och t&auml;nka:
+                    &rdquo;S&aring; har jag aldrig sett p&aring; det f&ouml;rut.&rdquo; Varje ber&auml;ttelse &auml;r en liten juvel.
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;The universe began as an enormous breath being held.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Tankeexperiment</span>
+                    <span class="page-tag">Filosofisk sci-fi</span>
+                    <span class="page-tag">Briljant</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 3: Foucaults pendel -->
+    <div class="book-page" data-page="2">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/foucaults pendel.webp" alt="Foucaults pendel">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_03</span>
+                <span class="page-genre">Litteratur &middot; Mysterium</span>
+                <h2>Foucaults pendel</h2>
+                <p class="page-author">Umberto Eco <span class="page-year">1988</span></p>
+                <p class="page-description">
+                    Tre f&ouml;rlagsredakt&ouml;rer hittar p&aring; en gigantisk konspiration f&ouml;r skojs skull &mdash;
+                    tills den b&ouml;rjar bli verklig. En labyrintisk, intellektuell thriller som v&auml;ver samman
+                    tempelriddare, kabbala och hemliga s&auml;llskap. F&ouml;r dig som &auml;lskar att g&aring; vilse i tankar.
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;Jag tror att det finns ber&auml;ttelser som man bara kan ber&auml;tta f&ouml;r sig sj&auml;lv.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Konspirationer</span>
+                    <span class="page-tag">Intellektuell</span>
+                    <span class="page-tag">Episk</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 4: Slakthus 5 -->
+    <div class="book-page" data-page="3">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/slakthus 5.webp" alt="Slakthus 5">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_04</span>
+                <span class="page-genre">Klassiker &middot; Satir</span>
+                <h2>Slakthus 5</h2>
+                <p class="page-author">Kurt Vonnegut <span class="page-year">1969</span></p>
+                <p class="page-description">
+                    Billy Pilgrim har &rdquo;lossnat i tiden&rdquo; och kastas mellan bombningen av Dresden,
+                    ett utomjordiskt zoo och efterkrigstidens Amerika. Vonneguts m&auml;sterverk &auml;r
+                    p&aring; en g&aring;ng hilariskt roligt och outh&auml;rdligt sorgligt. &rdquo;So it goes.&rdquo;
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;So it goes.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Antikrig</span>
+                    <span class="page-tag">Tidsresor</span>
+                    <span class="page-tag">Humor &amp; sorg</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 5: Illusionisten -->
+    <div class="book-page" data-page="4">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/illusionisten.webp" alt="Illusionisten">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_05</span>
+                <span class="page-genre">Litteratur &middot; Psykologisk</span>
+                <h2>Illusionisten</h2>
+                <p class="page-author">John Fowles <span class="page-year">1965</span></p>
+                <p class="page-description">
+                    En ung engelsman anl&auml;nder till en grekisk &ouml; och dras in i en mystisk miljon&auml;rs
+                    elaborerade psykologiska spel. Ingenting &auml;r vad det verkar vara. En bok som vrider och v&auml;nder
+                    p&aring; verkligheten tills man inte l&auml;ngre vet vad som &auml;r sant &mdash; och &auml;lskar det.
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;An intelligent woman is a woman with whom one can be as stupid as one wants.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Psykologiskt spel</span>
+                    <span class="page-tag">Grekland</span>
+                    <span class="page-tag">Mystik</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 6: Neuromancer -->
+    <div class="book-page" data-page="5">
+        <div class="book-page-inner">
+            <div class="book-page-cover">
+                <img src="Böcker/neuromancer.webp" alt="Neuromancer">
+            </div>
+            <div class="book-page-info">
+                <span class="page-label">// arkiv::bok_06</span>
+                <span class="page-genre">Cyberpunk &middot; Sci-fi</span>
+                <h2>Neuromancer</h2>
+                <p class="page-author">William Gibson <span class="page-year">1984</span></p>
+                <p class="page-description">
+                    Boken som uppfann cyberpunk. Case, en utbr&auml;nd hackare, f&aring;r en sista chans att
+                    jaga sig in i cyberrymden och utf&ouml;ra det ultimata dataintr&aring;nget. Gibson m&aring;lade en framtid
+                    som vi fortfarande lever oss in i &mdash; neonljus, AI och en v&auml;rld p&aring; kanten.
+                </p>
+                <div class="page-quote">
+                    <p>&rdquo;The sky above the port was the color of television, tuned to a dead channel.&rdquo;</p>
+                </div>
+                <div class="page-tags">
+                    <span class="page-tag">Cyberpunk-klassiker</span>
+                    <span class="page-tag">Hackers</span>
+                    <span class="page-tag">Vision&auml;rt</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Page Navigation -->
+<div class="page-nav" id="pageNav">
+    <button class="page-nav-btn" id="pagePrev">&#8592;</button>
+    <div class="page-nav-dots" id="pageNavDots"></div>
+    <span class="page-nav-counter" id="pageNavCounter">01 / 06</span>
+    <button class="page-nav-btn" id="pageNext">&#8594;</button>
+</div>
 
 <!-- Glitch overlay elements -->
 <div class="glitch-overlay" id="glitchOverlay">
@@ -1900,65 +2262,55 @@
     render();
 
     // ═══════════════════════════════════════════
-    // DYSTOPIAN GLITCH TRANSITION & BOOK CAROUSEL
+    // DYSTOPIAN GLITCH TRANSITION & BOOK PAGES
     // ═══════════════════════════════════════════
 
-    let carouselIndex = 0;
+    let currentPage = 0;
     let isDystopian = false;
+    const totalPages = 6;
 
-    // Build carousel slides from existing book cards
-    function buildCarousel() {
-        const viewport = document.getElementById('carouselViewport');
-        const dots = document.getElementById('carouselDots');
-        const cards = document.querySelectorAll('.books-grid .book-card');
-
-        viewport.innerHTML = '';
-        dots.innerHTML = '';
-
-        cards.forEach((card, i) => {
-            const slide = document.createElement('div');
-            slide.className = 'carousel-slide' + (i === 0 ? ' active' : '');
-            slide.appendChild(card.cloneNode(true));
-            viewport.appendChild(slide);
-
+    // Build navigation dots
+    function buildPageNav() {
+        const dotsContainer = document.getElementById('pageNavDots');
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < totalPages; i++) {
             const dot = document.createElement('div');
-            dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-            dot.addEventListener('click', () => goToSlide(i));
-            dots.appendChild(dot);
-        });
-
-        updateCounter();
+            dot.className = 'page-nav-dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', () => goToPage(i));
+            dotsContainer.appendChild(dot);
+        }
+        updatePageCounter();
     }
 
-    function goToSlide(index) {
-        const slides = document.querySelectorAll('.carousel-slide');
-        const dotEls = document.querySelectorAll('.carousel-dot');
-        if (index < 0) index = slides.length - 1;
-        if (index >= slides.length) index = 0;
+    function goToPage(index) {
+        if (index < 0) index = totalPages - 1;
+        if (index >= totalPages) index = 0;
 
-        slides.forEach(s => s.classList.remove('active'));
-        dotEls.forEach(d => d.classList.remove('active'));
+        const pages = document.querySelectorAll('.book-page');
+        const dots = document.querySelectorAll('.page-nav-dot');
 
-        carouselIndex = index;
-        slides[carouselIndex].classList.add('active');
-        dotEls[carouselIndex].classList.add('active');
-        updateCounter();
+        pages.forEach(p => p.classList.remove('active'));
+        dots.forEach(d => d.classList.remove('active'));
+
+        currentPage = index;
+        pages[currentPage].classList.add('active');
+        dots[currentPage].classList.add('active');
+        updatePageCounter();
     }
 
-    function updateCounter() {
-        const counter = document.getElementById('carouselCounter');
-        const total = document.querySelectorAll('.carousel-slide').length;
-        counter.textContent = String(carouselIndex + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+    function updatePageCounter() {
+        const counter = document.getElementById('pageNavCounter');
+        counter.textContent = String(currentPage + 1).padStart(2, '0') + ' / ' + String(totalPages).padStart(2, '0');
     }
 
-    document.getElementById('carouselPrev').addEventListener('click', () => goToSlide(carouselIndex - 1));
-    document.getElementById('carouselNext').addEventListener('click', () => goToSlide(carouselIndex + 1));
+    document.getElementById('pagePrev').addEventListener('click', () => goToPage(currentPage - 1));
+    document.getElementById('pageNext').addEventListener('click', () => goToPage(currentPage + 1));
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (!isDystopian) return;
-        if (e.key === 'ArrowLeft') goToSlide(carouselIndex - 1);
-        if (e.key === 'ArrowRight') goToSlide(carouselIndex + 1);
+        if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+        if (e.key === 'ArrowRight') goToPage(currentPage + 1);
     });
 
     // The glitch transition
@@ -1974,21 +2326,20 @@
         textOverlay.classList.add('active');
         document.body.classList.add('screen-shake');
 
-        // Swap theme halfway through the glitch (when screen is darkest)
-        setTimeout(() => {
-            document.body.classList.add('dystopian');
-            buildCarousel();
-        }, 900);
-
         // Remove screen shake
         setTimeout(() => {
             document.body.classList.remove('screen-shake');
         }, 400);
 
-        // Scroll to books after transition
+        // Swap theme halfway through the glitch (when screen is darkest)
         setTimeout(() => {
-            document.getElementById('books').scrollIntoView({ behavior: 'smooth' });
-        }, 1400);
+            document.body.classList.add('dystopian');
+            document.getElementById('bookPagesContainer').classList.add('active');
+            document.getElementById('pageNav').classList.add('active');
+            buildPageNav();
+            // Lock body scroll
+            document.body.style.overflow = 'hidden';
+        }, 900);
 
         // Clean up glitch overlays
         setTimeout(() => {
@@ -2001,7 +2352,8 @@
     document.getElementById('exploreBooksBtn').addEventListener('click', (e) => {
         e.preventDefault();
         if (isDystopian) {
-            document.getElementById('books').scrollIntoView({ behavior: 'smooth' });
+            // Already in dystopian mode, show first page
+            goToPage(0);
         } else {
             triggerDystopianTransition();
         }
