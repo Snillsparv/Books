@@ -1404,7 +1404,29 @@
             box-shadow: 0 0 10px rgba(255, 0, 51, 0.5);
         }
 
-        /* Vote button on book pages */
+        /* Vote button in navigation bar */
+        .page-nav-vote-btn {
+            padding: 0.6rem 1.5rem;
+            background: #ff0033;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.03em;
+            margin-left: 0.5rem;
+        }
+
+        .page-nav-vote-btn:hover {
+            background: #ff3355;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 0, 51, 0.3);
+        }
+
+        /* Vote button on book pages (unused, kept for future) */
         .page-vote-btn {
             display: inline-flex;
             align-items: center;
@@ -1842,6 +1864,7 @@
     <div class="page-nav-dots" id="pageNavDots"></div>
     <span class="page-nav-counter" id="pageNavCounter">01 / 06</span>
     <button class="page-nav-btn" id="pageNext">&#8594;</button>
+    <button class="page-nav-vote-btn" id="goToVoteBtn">R&ouml;sta &#9658;</button>
 </div>
 
 <!-- Glitch overlay elements -->
@@ -2357,6 +2380,14 @@
         } else {
             triggerDystopianTransition();
         }
+    });
+
+    // Go to voting – close book pages and show voting section
+    document.getElementById('goToVoteBtn').addEventListener('click', () => {
+        document.getElementById('bookPagesContainer').classList.remove('active');
+        document.getElementById('pageNav').classList.remove('active');
+        document.body.style.overflow = '';
+        document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
     });
 })();
 </script>
