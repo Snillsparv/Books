@@ -2862,7 +2862,7 @@
             startScreen.style.display = '';
             scoresScreen.style.display = 'none';
             document.getElementById('gamePlayerUp').textContent = players[playerIndex] + 's tur!';
-            document.getElementById('gameStartBtn').textContent = playerIndex === 0 ? 'Kör!' : 'Nästa!';
+            document.getElementById('gameStartBtn').textContent = 'Kör!';
         }
 
         document.getElementById('gameStartBtn').onclick = () => {
@@ -2900,11 +2900,21 @@
             let obstTimer = 0;
             const obstInterval = 90;
 
-            let score = 0;
+            let score = 10;
             let timeLeft = 10.0;
             let gameOver = false;
             let thrusting = false;
             let animFrame;
+
+            // Relay: next player's robot waiting on the right
+            const nextPlayer = playerIndex + 1 < players.length ? players[playerIndex + 1] : null;
+            const nextRobotX = W * 0.82;
+            let nextRobotBob = 0;
+
+            // Handoff state
+            let handoff = false;
+            let handoffTimer = 0;
+            const handoffDuration = 90; // ~1.5 seconds at 60fps
 
             // Input
             const keys = {};
@@ -2937,11 +2947,31 @@
                 const dt = Math.min((now - lastTime) / 16.67, 2);
                 lastTime = now;
 
+                // Handoff animation
+                if (handoff) {
+                    handoffTimer += dt;
+                    if (handoffTimer >= handoffDuration) {
+                        cleanup();
+                        scores[playerName] = score;
+                        playerIndex++;
+                        if (playerIndex < players.length) {
+                            runGame(players[playerIndex]);
+                        } else {
+                            showScores();
+                        }
+                        return 'done';
+                    }
+                    return;
+                }
+
                 // Timer
                 timeLeft -= dt * (16.67 / 1000);
                 if (timeLeft <= 0) {
                     timeLeft = 0;
-                    gameOver = true;
+                    handoff = true;
+                    handoffTimer = 0;
+                    keys.up = false;
+                    return;
                 }
                 document.getElementById('hudTimer').textContent = Math.ceil(timeLeft);
                 document.getElementById('hudScore').textContent = score + ' p';
@@ -2965,6 +2995,9 @@
                     velocity = 0;
                 }
 
+                // Next robot bobbing
+                nextRobotBob += 0.04 * dt;
+
                 // Obstacles
                 obstTimer += dt;
                 if (obstTimer >= obstInterval) {
@@ -2972,7 +3005,7 @@
                     const minGapY = gapSize / 2 + 40;
                     const maxGapY = H - gapSize / 2 - 40;
                     const gapY = minGapY + Math.random() * (maxGapY - minGapY);
-                    obstacles.push({ x: W + obstW, gapY, scored: false });
+                    obstacles.push({ x: W + obstW, gapY, scored: false, hit: false });
                 }
 
                 for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -2981,7 +3014,6 @@
                     // Score when passed
                     if (!obstacles[i].scored && obstacles[i].x + obstW < robotX) {
                         obstacles[i].scored = true;
-                        score++;
                     }
 
                     // Collision
@@ -2993,12 +3025,16 @@
 
                     if (rRight > o.x && rLeft < o.x + obstW) {
                         if (rTop < o.gapY - gapSize / 2 || rBottom > o.gapY + gapSize / 2) {
-                            // Hit! Bounce back but don't end game
+                            // Hit! Bounce away and lose a point (once per obstacle)
                             velocity = 0;
                             if (rTop < o.gapY - gapSize / 2) {
                                 robotY = o.gapY - gapSize / 2 + totalRobotH / 2 + 2;
                             } else {
                                 robotY = o.gapY + gapSize / 2 - robotBodyH / 2 - 2;
+                            }
+                            if (!o.hit) {
+                                o.hit = true;
+                                score--;
                             }
                         }
                     }
@@ -3008,6 +3044,46 @@
                         obstacles.splice(i, 1);
                     }
                 }
+            }
+
+            function drawRobot(x, y, name, isThrust, tiltAngle) {
+                const bodyImg = isThrust ? imgBodyGas : imgBody;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(tiltAngle);
+
+                // Draw body
+                if (bodyImg.complete && bodyImg.naturalWidth) {
+                    ctx.drawImage(bodyImg, -robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(-robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
+                }
+
+                // Draw head (centered on body)
+                const headImg = headImages[name];
+                if (headImg && headImg.complete && headImg.naturalWidth) {
+                    ctx.drawImage(headImg, -robotW / 2, -robotBodyH * 0.2 - robotHeadH * 0.55, robotW, robotHeadH);
+                } else {
+                    ctx.fillStyle = '#ff3355';
+                    ctx.beginPath();
+                    ctx.arc(0, -robotBodyH * 0.2 - robotHeadH * 0.2, robotW * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Thrust particles
+                if (isThrust) {
+                    for (let i = 0; i < 4; i++) {
+                        const px = (Math.random() - 0.5) * robotW * 0.5;
+                        const py = robotBodyH * 0.7 + Math.random() * 15;
+                        const size = 2 + Math.random() * 4;
+                        ctx.fillStyle = `rgba(255, ${50 + Math.random() * 100 | 0}, 0, ${0.5 + Math.random() * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
             }
 
             function draw() {
@@ -3042,7 +3118,6 @@
                     ctx.lineWidth = 2;
                     ctx.strokeRect(o.x, 0, obstW, topH);
 
-                    // Neon edge on top pillar bottom
                     ctx.shadowColor = '#ff0033';
                     ctx.shadowBlur = 10;
                     ctx.beginPath();
@@ -3067,71 +3142,68 @@
                     ctx.shadowBlur = 0;
                 }
 
-                // Robot
-                const bodyImg = thrusting ? imgBodyGas : imgBody;
-                const bodyDrawY = robotY - robotBodyH * 0.2;
-                const headDrawY = bodyDrawY - robotHeadH * 0.55;
+                if (handoff) {
+                    // Handoff animation: current robot flies right, next takes position
+                    const t = handoffTimer / handoffDuration;
+                    const ease = t * t * (3 - 2 * t); // smoothstep
 
-                // Slight tilt based on velocity
-                ctx.save();
-                ctx.translate(robotX, robotY);
-                const tilt = Math.max(-0.35, Math.min(0.35, velocity * 0.04));
-                ctx.rotate(tilt);
+                    // Current robot flies off to the right
+                    const curX = robotX + (W - robotX + 100) * ease;
+                    drawRobot(curX, robotY, playerName, true, 0.15);
 
-                // Draw body
-                if (bodyImg.complete && bodyImg.naturalWidth) {
-                    ctx.drawImage(bodyImg, -robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
+                    // Next robot slides from right into player position
+                    if (nextPlayer) {
+                        const nX = nextRobotX + (robotX - nextRobotX) * ease;
+                        const nY = H / 2 + Math.sin(nextRobotBob) * 8 * (1 - ease);
+                        drawRobot(nX, nY, nextPlayer, ease > 0.5, 0);
+
+                        // Name flash
+                        if (t > 0.2 && t < 0.85) {
+                            const alpha = Math.min(1, (t - 0.2) * 5) * Math.min(1, (0.85 - t) * 5);
+                            ctx.save();
+                            ctx.globalAlpha = alpha;
+                            ctx.font = `bold ${Math.min(48, W * 0.06)}px 'Playfair Display', serif`;
+                            ctx.fillStyle = '#ff3355';
+                            ctx.textAlign = 'center';
+                            ctx.shadowColor = '#ff0033';
+                            ctx.shadowBlur = 20;
+                            ctx.fillText(nextPlayer + 's tur!', W / 2, H / 2 - totalRobotH);
+                            ctx.restore();
+                        }
+                    }
                 } else {
-                    ctx.fillStyle = '#333';
-                    ctx.fillRect(-robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
-                }
+                    // Draw active player robot
+                    const tilt = Math.max(-0.35, Math.min(0.35, velocity * 0.04));
+                    drawRobot(robotX, robotY, playerName, thrusting, tilt);
 
-                // Draw head
-                const headImg = headImages[playerName];
-                if (headImg && headImg.complete && headImg.naturalWidth) {
-                    ctx.drawImage(headImg, -robotW * 0.45, -robotBodyH * 0.2 - robotHeadH * 0.55, robotW * 0.9, robotHeadH);
-                } else {
-                    ctx.fillStyle = '#ff3355';
-                    ctx.beginPath();
-                    ctx.arc(0, -robotBodyH * 0.2 - robotHeadH * 0.2, robotW * 0.35, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+                    // Draw next player's robot waiting on the right (bobbing gently)
+                    if (nextPlayer) {
+                        const bobY = H / 2 + Math.sin(nextRobotBob) * 8;
+                        ctx.globalAlpha = 0.5;
+                        drawRobot(nextRobotX, bobY, nextPlayer, false, 0);
+                        ctx.globalAlpha = 1;
 
-                // Thrust particles
-                if (thrusting) {
-                    for (let i = 0; i < 4; i++) {
-                        const px = (Math.random() - 0.5) * robotW * 0.5;
-                        const py = robotBodyH * 0.7 + Math.random() * 15;
-                        const size = 2 + Math.random() * 4;
-                        ctx.fillStyle = `rgba(255, ${50 + Math.random() * 100 | 0}, 0, ${0.5 + Math.random() * 0.5})`;
-                        ctx.beginPath();
-                        ctx.arc(px, py, size, 0, Math.PI * 2);
-                        ctx.fill();
+                        // Small name label under next robot
+                        ctx.save();
+                        ctx.font = `${Math.min(14, W * 0.02)}px 'JetBrains Mono', monospace`;
+                        ctx.fillStyle = 'rgba(255, 51, 85, 0.5)';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(nextPlayer, nextRobotX, bobY + totalRobotH * 0.7);
+                        ctx.restore();
                     }
                 }
+            }
 
-                ctx.restore();
+            function cleanup() {
+                window.removeEventListener('keydown', onKeyDown);
+                window.removeEventListener('keyup', onKeyUp);
+                canvas.removeEventListener('touchstart', onTouchStart);
+                canvas.removeEventListener('touchend', onTouchEnd);
             }
 
             function gameLoop(now) {
-                if (gameOver) {
-                    // Cleanup
-                    window.removeEventListener('keydown', onKeyDown);
-                    window.removeEventListener('keyup', onKeyUp);
-                    canvas.removeEventListener('touchstart', onTouchStart);
-                    canvas.removeEventListener('touchend', onTouchEnd);
-
-                    scores[playerName] = score;
-                    playerIndex++;
-
-                    if (playerIndex < players.length) {
-                        showPlayerStart();
-                    } else {
-                        showScores();
-                    }
-                    return;
-                }
-                update(now);
+                const result = update(now);
+                if (result === 'done') return;
                 draw();
                 animFrame = requestAnimationFrame(gameLoop);
             }
