@@ -2618,8 +2618,16 @@ function revealBook(btn) {
         } catch(e) {}
     }
 
+    function hasGoldVote(voterName) {
+        return (window._raceGoldVoters || []).includes(voterName);
+    }
+
     function getCurrentPicks() {
-        return PICKS_PER_ROUND[state.currentRound] || 1;
+        const base = PICKS_PER_ROUND[state.currentRound] || 1;
+        if (state.selectedVoter && hasGoldVote(state.selectedVoter)) {
+            return base + 1;
+        }
+        return base;
     }
 
     function getCurrentRoundData() {
@@ -2783,7 +2791,11 @@ function revealBook(btn) {
             return;
         }
 
-        instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter:`;
+        if (hasGoldVote(state.selectedVoter)) {
+            instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter <span style="color:#c9a84c">(inkl. guldröst — du kan dubbelrösta på en bok!)</span>:`;
+        } else {
+            instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter:`;
+        }
         submitBtn.textContent = 'R\u00f6sta';
 
         getActiveBooks().forEach(book => {
@@ -2797,24 +2809,29 @@ function revealBook(btn) {
     function createVoteOption(book, disabled) {
         const opt = document.createElement('div');
         opt.className = 'vote-option';
-        const isSelected = state.selectedBooks.includes(book.id);
-        if (isSelected) opt.classList.add('selected');
+        const selectCount = state.selectedBooks.filter(id => id === book.id).length;
+        if (selectCount > 0) opt.classList.add('selected');
+        const gold = state.selectedVoter && hasGoldVote(state.selectedVoter);
         opt.innerHTML = `
             <div class="vote-radio"><div class="vote-radio-inner"></div></div>
             <div class="vote-option-info">
-                <div class="vote-option-title">${book.title}</div>
+                <div class="vote-option-title">${book.title}${selectCount > 1 ? ' <span style="color:#c9a84c;font-size:0.75em">x2 GULD</span>' : ''}</div>
                 <div class="vote-option-author">${book.author}</div>
             </div>
         `;
         if (!disabled) {
             opt.addEventListener('click', () => {
                 const picks = getCurrentPicks();
-                const idx = state.selectedBooks.indexOf(book.id);
-                if (idx >= 0) {
-                    state.selectedBooks.splice(idx, 1);
-                } else if (state.selectedBooks.length < picks) {
+                const count = state.selectedBooks.filter(id => id === book.id).length;
+                if (count > 0 && (!gold || count >= 2)) {
+                    // Remove all instances of this book
+                    state.selectedBooks = state.selectedBooks.filter(id => id !== book.id);
+                } else if (count === 1 && gold && state.selectedBooks.length < picks) {
+                    // Gold voter: second click adds gold vote (duplicate)
                     state.selectedBooks.push(book.id);
-                } else {
+                } else if (count === 0 && state.selectedBooks.length < picks) {
+                    state.selectedBooks.push(book.id);
+                } else if (state.selectedBooks.length >= picks) {
                     // Replace oldest selection
                     state.selectedBooks.shift();
                     state.selectedBooks.push(book.id);
@@ -3229,6 +3246,8 @@ function revealBook(btn) {
         imgBody.src = 'robotkropp.webp';
         const imgBodyGas = new Image();
         imgBodyGas.src = 'robotkropp_gas.webp';
+        const imgBaton = new Image();
+        imgBaton.src = 'bilden.webp';
         const headImages = {};
         players.forEach(name => {
             const img = new Image();
@@ -3515,7 +3534,7 @@ function revealBook(btn) {
                 }
             }
 
-            function drawRobot(x, y, name, isThrust, tiltAngle) {
+            function drawRobot(x, y, name, isThrust, tiltAngle, hasBaton) {
                 const bodyImg = isThrust ? imgBodyGas : imgBody;
                 ctx.save();
                 ctx.translate(x, y);
@@ -3526,9 +3545,9 @@ function revealBook(btn) {
                     ctx.drawImage(bodyImg, -robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
                 }
 
-                // Draw head (shifted right to match body)
+                // Draw head (shifted right to align with body)
                 const headImg = headImages[name];
-                const headOffsetX = robotW * 0.12;
+                const headOffsetX = robotW * 0.35;
                 if (headImg && headImg.complete && headImg.naturalWidth) {
                     ctx.drawImage(headImg, -robotW / 2 + headOffsetX, -robotBodyH * 0.2 - robotHeadH * 0.55, robotW, robotHeadH);
                 } else {
@@ -3536,6 +3555,16 @@ function revealBook(btn) {
                     ctx.beginPath();
                     ctx.arc(headOffsetX, -robotBodyH * 0.2 - robotHeadH * 0.2, robotW * 0.35, 0, Math.PI * 2);
                     ctx.fill();
+                }
+
+                // Baton (small bilden.webp) held in front
+                if (hasBaton && imgBaton.complete && imgBaton.naturalWidth) {
+                    const batonS = robotW * 0.45;
+                    ctx.save();
+                    ctx.shadowColor = '#ff3355';
+                    ctx.shadowBlur = 8;
+                    ctx.drawImage(imgBaton, robotW * 0.35, -batonS * 0.3, batonS, batonS);
+                    ctx.restore();
                 }
 
                 // Thrust particles
@@ -3632,7 +3661,7 @@ function revealBook(btn) {
                     const sx = wp.worldX - worldOffset;
                     if (sx > W + 100 || sx < -100) continue;
                     ctx.globalAlpha = 0.6;
-                    drawRobot(sx, wp.y, wp.name, false, 0);
+                    drawRobot(sx, wp.y, wp.name, false, 0, false);
                     ctx.globalAlpha = 1;
 
                     // Name label
@@ -3650,7 +3679,7 @@ function revealBook(btn) {
 
                     // Current robot flies ahead
                     const curX = robotScreenX + (W * 0.7) * ease;
-                    drawRobot(curX, robotY, playerName, true, 0.15);
+                    drawRobot(curX, robotY, playerName, true, 0.15, true);
 
                     // Name flash for next player
                     const nextPlayer = playerIndex + 1 < players.length ? players[playerIndex + 1] : null;
@@ -3668,7 +3697,7 @@ function revealBook(btn) {
                     }
                 } else {
                     const tilt = Math.max(-0.35, Math.min(0.35, velocity * 0.04));
-                    drawRobot(robotScreenX, robotY, playerName, thrusting, tilt);
+                    drawRobot(robotScreenX, robotY, playerName, thrusting, tilt, true);
                 }
             }
 
@@ -3699,9 +3728,16 @@ function revealBook(btn) {
             const list = document.getElementById('gameScoreList');
             list.innerHTML = '';
             const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-            sorted.forEach(([name, sc], i) => {
+            const topScore = sorted[0][1];
+            const winners = sorted.filter(([, sc]) => sc === topScore).map(([name]) => name);
+
+            // Store race winners globally for voting gold vote
+            window._raceGoldVoters = winners;
+
+            sorted.forEach(([name, sc]) => {
+                const isWinner = winners.includes(name);
                 const li = document.createElement('li');
-                li.innerHTML = `<span class="score-name">${i === 0 ? '&#9733; ' : ''}${name}</span><span class="score-val">${sc} p</span>`;
+                li.innerHTML = `<span class="score-name">${isWinner ? '&#9733; ' : ''}${name}${isWinner ? ' <span style="color:#c9a84c;font-size:0.8em">GULDRÖST</span>' : ''}</span><span class="score-val">${sc} p</span>`;
                 list.appendChild(li);
             });
 
