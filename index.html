@@ -3186,14 +3186,39 @@ function revealBook(btn) {
         }, 800);
     });
 
-    // Go to classified image → film → mission → game → voting
+    // Go to film_1 → classified image → mission → game → voting
     document.getElementById('goToVoteBtn').addEventListener('click', () => {
         document.getElementById('bookPagesContainer').classList.remove('active');
         document.getElementById('pageNav').classList.remove('active');
-        startClassifiedSequence();
+        playPreFilm();
     });
 
-    // ── Classified Image Sequence ──
+    // ── Phase 1: Play film_1 right after books ──
+    function playPreFilm() {
+        const gameOverlay = document.getElementById('robotGameOverlay');
+        const videoScreen1 = document.getElementById('gameVideoScreen1');
+        const video1 = document.getElementById('gameVideo1');
+
+        gameOverlay.classList.add('active');
+        videoScreen1.style.display = '';
+        video1.currentTime = 0;
+        video1.play();
+
+        function onFilmDone() {
+            videoScreen1.style.display = 'none';
+            gameOverlay.classList.remove('active');
+            startClassifiedSequence();
+        }
+
+        video1.onended = onFilmDone;
+        videoScreen1.onclick = () => {
+            video1.pause();
+            video1.onended = null;
+            onFilmDone();
+        };
+    }
+
+    // ── Phase 2: Classified Image Sequence ──
     function startClassifiedSequence() {
         const overlay = document.getElementById('classifiedOverlay');
         const img = document.getElementById('classifiedImg');
@@ -3208,16 +3233,13 @@ function revealBook(btn) {
         overlay.onclick = () => {
             step++;
             if (step === 1) {
-                // Unblur
                 img.classList.remove('blurred');
                 hint.textContent = 'Klicka igen...';
             } else if (step === 2) {
-                // Zoom + swap image
                 img.classList.add('zoomed');
                 img.src = 'bilden_musch.webp';
                 hint.textContent = '';
             } else if (step === 3) {
-                // Go to film_1
                 overlay.classList.remove('active');
                 overlay.onclick = null;
                 startRobotGame();
@@ -3256,29 +3278,12 @@ function revealBook(btn) {
         });
 
         overlay.classList.add('active');
+        videoScreen1.style.display = 'none';
 
-        // ── Phase 1: Play film_1 ──
+        // ── Show mission briefing ──
         const missionScreen = document.getElementById('missionScreen');
-        missionScreen.style.display = 'none';
-        videoScreen1.style.display = '';
-        video1.currentTime = 0;
-        video1.play();
-        video1.onended = () => {
-            videoScreen1.style.display = 'none';
-            showMission();
-        };
-        videoScreen1.onclick = () => {
-            video1.pause();
-            video1.onended = null;
-            videoScreen1.style.display = 'none';
-            showMission();
-        };
-
-        // ── Phase 2: Mission briefing ──
-        function showMission() {
-            missionScreen.style.display = '';
-            missionScreen.classList.add('active');
-        }
+        missionScreen.style.display = '';
+        missionScreen.classList.add('active');
 
         document.getElementById('missionStartBtn').onclick = () => {
             missionScreen.classList.remove('active');
@@ -3410,6 +3415,46 @@ function revealBook(btn) {
             canvas.addEventListener('touchstart', onTouchStart);
             canvas.addEventListener('touchend', onTouchEnd);
 
+            // ── Voice control via microphone ──
+            let micStream = null;
+            let micAnalyser = null;
+            let micData = null;
+            let micActive = false;
+
+            if (!window._micAudioCtx) {
+                // Only request mic once; reuse across players
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    window._micStream = stream;
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    window._micAudioCtx = audioCtx;
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    const analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 256;
+                    analyser.smoothingTimeConstant = 0.3;
+                    source.connect(analyser);
+                    window._micAnalyser = analyser;
+                    window._micData = new Uint8Array(analyser.frequencyBinCount);
+                    micAnalyser = analyser;
+                    micData = window._micData;
+                    micActive = true;
+                }).catch(() => {});
+            } else {
+                micAnalyser = window._micAnalyser;
+                micData = window._micData;
+                micActive = true;
+                if (window._micAudioCtx.state === 'suspended') {
+                    window._micAudioCtx.resume();
+                }
+            }
+
+            function getMicLevel() {
+                if (!micActive || !micAnalyser || !micData) return 0;
+                micAnalyser.getByteFrequencyData(micData);
+                let sum = 0;
+                for (let i = 0; i < micData.length; i++) sum += micData[i];
+                return sum / micData.length / 255; // 0..1
+            }
+
             let lastTime = performance.now();
 
             function update(now) {
@@ -3448,7 +3493,9 @@ function revealBook(btn) {
                 document.getElementById('hudScore').textContent = score + ' p';
 
                 // Physics
-                thrusting = !!keys.up;
+                const micLevel = getMicLevel();
+                const micThrust = micLevel > 0.12; // threshold for voice activation
+                thrusting = !!keys.up || micThrust;
                 if (thrusting) {
                     velocity += (flapStrength * 0.15) * dt;
                 }
@@ -3557,13 +3604,13 @@ function revealBook(btn) {
                     ctx.fill();
                 }
 
-                // Baton (small bilden.webp) held in front
+                // Baton (small bilden.webp) held lower on the body
                 if (hasBaton && imgBaton.complete && imgBaton.naturalWidth) {
                     const batonS = robotW * 0.45;
                     ctx.save();
                     ctx.shadowColor = '#ff3355';
                     ctx.shadowBlur = 8;
-                    ctx.drawImage(imgBaton, robotW * 0.35, -batonS * 0.3, batonS, batonS);
+                    ctx.drawImage(imgBaton, robotW * 0.35, robotBodyH * 0.15, batonS, batonS);
                     ctx.restore();
                 }
 
@@ -3676,15 +3723,34 @@ function revealBook(btn) {
                 if (handoff) {
                     const t = handoffTimer / handoffDuration;
                     const ease = t * t * (3 - 2 * t);
+                    const nextPlayer = playerIndex + 1 < players.length ? players[playerIndex + 1] : null;
 
-                    // Current robot flies ahead
-                    const curX = robotScreenX + (W * 0.7) * ease;
-                    drawRobot(curX, robotY, playerName, true, 0.15, true);
+                    // Find next player's screen position
+                    const nextWP = waitingPlayers.find(wp => nextPlayer && wp.name === nextPlayer);
+                    const nextScreenX = nextWP ? nextWP.worldX - worldOffset : robotScreenX;
+
+                    // Current robot stays at position, baton transfers
+                    // First half: robots side by side, baton floats to next
+                    // Second half: old robot fades, new robot becomes active
+                    const hasBatonStill = t < 0.4;
+                    drawRobot(robotScreenX, robotY, playerName, false, 0, hasBatonStill);
+
+                    // Draw baton floating between robots during handoff
+                    if (nextPlayer && t >= 0.2 && t < 0.6 && imgBaton.complete && imgBaton.naturalWidth) {
+                        const bt = (t - 0.2) / 0.4;
+                        const batonS = robotW * 0.45;
+                        const bx = robotScreenX + (nextScreenX - robotScreenX) * bt;
+                        const by = robotY + robotBodyH * 0.15 + Math.sin(bt * Math.PI) * -20;
+                        ctx.save();
+                        ctx.shadowColor = '#c9a84c';
+                        ctx.shadowBlur = 15;
+                        ctx.drawImage(imgBaton, bx - batonS / 2, by, batonS, batonS);
+                        ctx.restore();
+                    }
 
                     // Name flash for next player
-                    const nextPlayer = playerIndex + 1 < players.length ? players[playerIndex + 1] : null;
-                    if (nextPlayer && t > 0.2 && t < 0.85) {
-                        const alpha = Math.min(1, (t - 0.2) * 5) * Math.min(1, (0.85 - t) * 5);
+                    if (nextPlayer && t > 0.15 && t < 0.85) {
+                        const alpha = Math.min(1, (t - 0.15) * 5) * Math.min(1, (0.85 - t) * 5);
                         ctx.save();
                         ctx.globalAlpha = alpha;
                         ctx.font = `bold ${Math.min(48, W * 0.06)}px 'Playfair Display', serif`;
