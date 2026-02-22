@@ -2984,6 +2984,10 @@ function revealBook(btn) {
         const overlay = document.getElementById('glitchOverlay');
         const textOverlay = document.getElementById('glitchText');
 
+        // Play warning sound
+        const warnSfx = new Audio('warning.wav');
+        warnSfx.play().catch(() => {});
+
         // Start glitch
         overlay.classList.add('active');
         textOverlay.classList.add('active');
@@ -3137,11 +3141,13 @@ function revealBook(btn) {
             obstSpacing = W * 0.45;
 
             // Place future players along the course
+            // Distance per 10 seconds: obstSpeed * ~600 frames (60fps * 10s)
+            const playerSpacing = obstSpeed * 600;
             waitingPlayers = [];
             for (let i = 1; i < players.length; i++) {
                 waitingPlayers.push({
                     name: players[i],
-                    worldX: i * obstSpacing * 3.5,
+                    worldX: i * playerSpacing,
                     y: H / 2,
                     active: false
                 });
@@ -3278,6 +3284,16 @@ function revealBook(btn) {
 
                 // Robot world X
                 const robotWorldX = worldOffset + robotScreenX;
+
+                // Check if we reached the next waiting player → handoff
+                for (const wp of waitingPlayers) {
+                    if (!wp.active && wp.name !== playerName && robotWorldX >= wp.worldX - robotW) {
+                        handoff = true;
+                        handoffTimer = 0;
+                        keys.up = false;
+                        return;
+                    }
+                }
 
                 // Obstacle collision
                 for (const o of worldObstacles) {
