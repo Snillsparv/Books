@@ -1651,6 +1651,133 @@
         body.dystopian #books .section-header {
             display: none;
         }
+
+        /* ── Robot Game ── */
+        .robot-game-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 8000;
+            background: #0a0a0a;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .robot-game-overlay.active {
+            display: flex;
+        }
+
+        .robot-game-hud {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            z-index: 2;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e0e0e0;
+        }
+
+        .robot-game-hud .hud-player {
+            font-size: 1.1rem;
+            color: #ff3355;
+            font-weight: 600;
+        }
+
+        .robot-game-hud .hud-timer {
+            font-size: 2rem;
+            color: #ff0033;
+            text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+        }
+
+        .robot-game-hud .hud-score {
+            font-size: 1.1rem;
+        }
+
+        #robotGameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-start-screen, .game-scores-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            background: rgba(10, 10, 10, 0.92);
+            color: #e0e0e0;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .game-start-screen h2, .game-scores-screen h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: #ff3355;
+            margin-bottom: 0.5rem;
+        }
+
+        .game-start-screen p {
+            max-width: 400px;
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .game-start-screen .player-up {
+            font-size: 1.3rem;
+            color: #ff3355;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .game-start-btn, .game-next-btn {
+            padding: 0.9rem 2.5rem;
+            background: #ff0033;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .game-start-btn:hover, .game-next-btn:hover {
+            background: #ff3355;
+            box-shadow: 0 8px 25px rgba(255, 0, 51, 0.3);
+        }
+
+        .game-scores-screen .score-list {
+            list-style: none;
+            margin: 1.5rem 0 2rem;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .game-scores-screen .score-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.7rem 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+        }
+
+        .game-scores-screen .score-list li .score-name {
+            color: #ff3355;
+        }
+
+        .game-scores-screen .score-list li .score-val {
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -2004,7 +2131,7 @@
     <div class="page-nav-dots" id="pageNavDots"></div>
     <span class="page-nav-counter" id="pageNavCounter">01 / 06</span>
     <button class="page-nav-btn" id="pageNext">&#8594;</button>
-    <button class="page-nav-vote-btn" id="goToVoteBtn">R&ouml;sta &#9658;</button>
+    <button class="page-nav-vote-btn" id="goToVoteBtn">Vidare &#9658;</button>
 </div>
 
 <!-- Background music -->
@@ -2020,6 +2147,29 @@
 </div>
 <div class="glitch-text-overlay" id="glitchText">
     <span class="glitch-msg">SYSTEM OVERRIDE</span>
+</div>
+
+<!-- ════════════════ ROBOT GAME ════════════════ -->
+<div class="robot-game-overlay" id="robotGameOverlay">
+    <div class="robot-game-hud">
+        <div class="hud-player" id="hudPlayer"></div>
+        <div class="hud-timer" id="hudTimer">10</div>
+        <div class="hud-score" id="hudScore">0</div>
+    </div>
+    <canvas id="robotGameCanvas"></canvas>
+
+    <div class="game-start-screen" id="gameStartScreen">
+        <h2>Robot Race</h2>
+        <p>Flyg din robot genom hindren! Tryck upp&aring;t eller mellanslag f&ouml;r att ge gas. Undvik hindren och samla po&auml;ng i 10 sekunder.</p>
+        <div class="player-up" id="gamePlayerUp"></div>
+        <button class="game-start-btn" id="gameStartBtn">K&ouml;r!</button>
+    </div>
+
+    <div class="game-scores-screen" id="gameScoresScreen" style="display:none;">
+        <h2>Resultat</h2>
+        <ul class="score-list" id="gameScoreList"></ul>
+        <button class="game-next-btn" id="gameNextBtn"></button>
+    </div>
 </div>
 
 <!-- ════════════════ VOTING ════════════════ -->
@@ -2674,21 +2824,341 @@
         }, 800);
     });
 
-    // Go to voting – close book pages and show voting section
+    // Go to game – close book pages and launch robot game
     document.getElementById('goToVoteBtn').addEventListener('click', () => {
         document.getElementById('bookPagesContainer').classList.remove('active');
         document.getElementById('pageNav').classList.remove('active');
-        document.body.style.overflow = '';
-        document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
+        startRobotGame();
     });
 
-    // Go to voting – close book pages and show voting section
-    document.getElementById('goToVoteBtn').addEventListener('click', () => {
-        document.getElementById('bookPagesContainer').classList.remove('active');
-        document.getElementById('pageNav').classList.remove('active');
-        document.body.style.overflow = '';
-        document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
-    });
+    // ── Robot Flying Game ──
+    function startRobotGame() {
+        const overlay = document.getElementById('robotGameOverlay');
+        const canvas = document.getElementById('robotGameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('gameStartScreen');
+        const scoresScreen = document.getElementById('gameScoresScreen');
+
+        const players = [...MEMBERS];
+        let playerIndex = 0;
+        const scores = {};
+
+        // Preload images
+        const imgBody = new Image();
+        imgBody.src = 'robotkropp.webp';
+        const imgBodyGas = new Image();
+        imgBodyGas.src = 'robotkropp_gas.webp';
+        const headImages = {};
+        players.forEach(name => {
+            const img = new Image();
+            img.src = ROBOT_IMAGES[name].neutral;
+            headImages[name] = img;
+        });
+
+        overlay.classList.add('active');
+        showPlayerStart();
+
+        function showPlayerStart() {
+            startScreen.style.display = '';
+            scoresScreen.style.display = 'none';
+            document.getElementById('gamePlayerUp').textContent = players[playerIndex] + 's tur!';
+            document.getElementById('gameStartBtn').textContent = playerIndex === 0 ? 'Kör!' : 'Nästa!';
+        }
+
+        document.getElementById('gameStartBtn').onclick = () => {
+            startScreen.style.display = 'none';
+            runGame(players[playerIndex]);
+        };
+
+        function runGame(playerName) {
+            // Resize canvas to fill screen
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            document.getElementById('hudPlayer').textContent = playerName;
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // Robot sizing
+            const robotW = Math.min(70, W * 0.09);
+            const robotBodyH = robotW * 1.4;
+            const robotHeadH = robotW * 1.0;
+            const totalRobotH = robotBodyH + robotHeadH * 0.55;
+
+            // Game state
+            let robotY = H / 2;
+            let velocity = 0;
+            const gravity = 0.45;
+            const flapStrength = -7;
+            const robotX = W * 0.18;
+
+            let obstacles = [];
+            const obstW = Math.min(55, W * 0.07);
+            const gapSize = totalRobotH * 3.2;
+            const obstSpeed = Math.max(3, W * 0.004);
+            let obstTimer = 0;
+            const obstInterval = 90;
+
+            let score = 0;
+            let timeLeft = 10.0;
+            let gameOver = false;
+            let thrusting = false;
+            let animFrame;
+
+            // Input
+            const keys = {};
+            function onKeyDown(e) {
+                if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+                    e.preventDefault();
+                    keys.up = true;
+                }
+            }
+            function onKeyUp(e) {
+                if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+                    keys.up = false;
+                }
+            }
+            function onTouchStart(e) {
+                e.preventDefault();
+                keys.up = true;
+            }
+            function onTouchEnd() {
+                keys.up = false;
+            }
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
+            canvas.addEventListener('touchstart', onTouchStart);
+            canvas.addEventListener('touchend', onTouchEnd);
+
+            let lastTime = performance.now();
+
+            function update(now) {
+                const dt = Math.min((now - lastTime) / 16.67, 2);
+                lastTime = now;
+
+                // Timer
+                timeLeft -= dt * (16.67 / 1000);
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    gameOver = true;
+                }
+                document.getElementById('hudTimer').textContent = Math.ceil(timeLeft);
+                document.getElementById('hudScore').textContent = score + ' p';
+
+                // Physics
+                thrusting = !!keys.up;
+                if (thrusting) {
+                    velocity += (flapStrength * 0.15) * dt;
+                }
+                velocity += gravity * dt;
+                velocity = Math.max(-10, Math.min(10, velocity));
+                robotY += velocity * dt;
+
+                // Clamp to screen
+                if (robotY < totalRobotH / 2) {
+                    robotY = totalRobotH / 2;
+                    velocity = 0;
+                }
+                if (robotY > H - robotBodyH / 2) {
+                    robotY = H - robotBodyH / 2;
+                    velocity = 0;
+                }
+
+                // Obstacles
+                obstTimer += dt;
+                if (obstTimer >= obstInterval) {
+                    obstTimer = 0;
+                    const minGapY = gapSize / 2 + 40;
+                    const maxGapY = H - gapSize / 2 - 40;
+                    const gapY = minGapY + Math.random() * (maxGapY - minGapY);
+                    obstacles.push({ x: W + obstW, gapY, scored: false });
+                }
+
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    obstacles[i].x -= obstSpeed * dt;
+
+                    // Score when passed
+                    if (!obstacles[i].scored && obstacles[i].x + obstW < robotX) {
+                        obstacles[i].scored = true;
+                        score++;
+                    }
+
+                    // Collision
+                    const o = obstacles[i];
+                    const rLeft = robotX - robotW / 2;
+                    const rRight = robotX + robotW / 2;
+                    const rTop = robotY - totalRobotH / 2;
+                    const rBottom = robotY + robotBodyH / 2;
+
+                    if (rRight > o.x && rLeft < o.x + obstW) {
+                        if (rTop < o.gapY - gapSize / 2 || rBottom > o.gapY + gapSize / 2) {
+                            // Hit! Bounce back but don't end game
+                            velocity = 0;
+                            if (rTop < o.gapY - gapSize / 2) {
+                                robotY = o.gapY - gapSize / 2 + totalRobotH / 2 + 2;
+                            } else {
+                                robotY = o.gapY + gapSize / 2 - robotBodyH / 2 - 2;
+                            }
+                        }
+                    }
+
+                    // Remove off-screen
+                    if (o.x + obstW < -10) {
+                        obstacles.splice(i, 1);
+                    }
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+
+                // Background – dark city silhouette
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, W, H);
+
+                // Horizon glow
+                const glow = ctx.createRadialGradient(W * 0.5, H * 0.8, 0, W * 0.5, H * 0.8, H * 0.6);
+                glow.addColorStop(0, 'rgba(255, 0, 51, 0.06)');
+                glow.addColorStop(1, 'transparent');
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, W, H);
+
+                // Ground line
+                ctx.strokeStyle = 'rgba(255, 0, 51, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, H - 2);
+                ctx.lineTo(W, H - 2);
+                ctx.stroke();
+
+                // Obstacles
+                for (const o of obstacles) {
+                    // Top pillar
+                    const topH = o.gapY - gapSize / 2;
+                    ctx.fillStyle = '#1a0008';
+                    ctx.fillRect(o.x, 0, obstW, topH);
+                    ctx.strokeStyle = '#ff0033';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(o.x, 0, obstW, topH);
+
+                    // Neon edge on top pillar bottom
+                    ctx.shadowColor = '#ff0033';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.moveTo(o.x, topH);
+                    ctx.lineTo(o.x + obstW, topH);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    // Bottom pillar
+                    const botY = o.gapY + gapSize / 2;
+                    ctx.fillStyle = '#1a0008';
+                    ctx.fillRect(o.x, botY, obstW, H - botY);
+                    ctx.strokeStyle = '#ff0033';
+                    ctx.strokeRect(o.x, botY, obstW, H - botY);
+
+                    ctx.shadowColor = '#ff0033';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.moveTo(o.x, botY);
+                    ctx.lineTo(o.x + obstW, botY);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Robot
+                const bodyImg = thrusting ? imgBodyGas : imgBody;
+                const bodyDrawY = robotY - robotBodyH * 0.2;
+                const headDrawY = bodyDrawY - robotHeadH * 0.55;
+
+                // Slight tilt based on velocity
+                ctx.save();
+                ctx.translate(robotX, robotY);
+                const tilt = Math.max(-0.35, Math.min(0.35, velocity * 0.04));
+                ctx.rotate(tilt);
+
+                // Draw body
+                if (bodyImg.complete && bodyImg.naturalWidth) {
+                    ctx.drawImage(bodyImg, -robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(-robotW / 2, -robotBodyH * 0.2, robotW, robotBodyH);
+                }
+
+                // Draw head
+                const headImg = headImages[playerName];
+                if (headImg && headImg.complete && headImg.naturalWidth) {
+                    ctx.drawImage(headImg, -robotW * 0.45, -robotBodyH * 0.2 - robotHeadH * 0.55, robotW * 0.9, robotHeadH);
+                } else {
+                    ctx.fillStyle = '#ff3355';
+                    ctx.beginPath();
+                    ctx.arc(0, -robotBodyH * 0.2 - robotHeadH * 0.2, robotW * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Thrust particles
+                if (thrusting) {
+                    for (let i = 0; i < 4; i++) {
+                        const px = (Math.random() - 0.5) * robotW * 0.5;
+                        const py = robotBodyH * 0.7 + Math.random() * 15;
+                        const size = 2 + Math.random() * 4;
+                        ctx.fillStyle = `rgba(255, ${50 + Math.random() * 100 | 0}, 0, ${0.5 + Math.random() * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            function gameLoop(now) {
+                if (gameOver) {
+                    // Cleanup
+                    window.removeEventListener('keydown', onKeyDown);
+                    window.removeEventListener('keyup', onKeyUp);
+                    canvas.removeEventListener('touchstart', onTouchStart);
+                    canvas.removeEventListener('touchend', onTouchEnd);
+
+                    scores[playerName] = score;
+                    playerIndex++;
+
+                    if (playerIndex < players.length) {
+                        showPlayerStart();
+                    } else {
+                        showScores();
+                    }
+                    return;
+                }
+                update(now);
+                draw();
+                animFrame = requestAnimationFrame(gameLoop);
+            }
+            animFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function showScores() {
+            startScreen.style.display = 'none';
+            scoresScreen.style.display = '';
+
+            const list = document.getElementById('gameScoreList');
+            list.innerHTML = '';
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            sorted.forEach(([name, sc], i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="score-name">${i === 0 ? '&#9733; ' : ''}${name}</span><span class="score-val">${sc} p</span>`;
+                list.appendChild(li);
+            });
+
+            document.getElementById('gameNextBtn').textContent = 'Vidare till röstningen';
+            document.getElementById('gameNextBtn').onclick = () => {
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+                document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
+            };
+        }
+    }
 })();
 </script>
 
