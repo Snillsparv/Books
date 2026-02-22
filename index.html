@@ -1370,22 +1370,179 @@
         .book-page-cover {
             flex-shrink: 0;
             width: 300px;
+            perspective: 900px;
         }
 
-        .book-page-cover img {
+        .book-page-cover .cover-flipper {
+            position: relative;
+            width: 100%;
+            transition: transform 0.8s ease;
+            transform-style: preserve-3d;
+        }
+
+        .book-page-cover.revealed .cover-flipper {
+            transform: rotateY(180deg);
+        }
+
+        .book-page-cover .cover-front,
+        .book-page-cover .cover-back {
+            backface-visibility: hidden;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .book-page-cover .cover-front {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 2/3;
+            background: #111;
+            border: 2px solid rgba(255, 0, 51, 0.25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 0, 51, 0.15);
+            cursor: default;
+        }
+
+        .book-page-cover .cover-front .cover-mystery {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .book-page-cover .cover-front .cover-mystery .mystery-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .book-page-cover .cover-front .cover-mystery .mystery-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(255, 0, 51, 0.5);
+        }
+
+        .book-page-cover .cover-back {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            transform: rotateY(180deg);
+        }
+
+        .book-page-cover .cover-back img {
             width: 100%;
             border-radius: 8px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 0, 51, 0.15);
-            transition: transform 0.4s ease;
+            display: block;
         }
 
-        .book-page-cover img:hover {
-            transform: scale(1.03);
-        }
-
+        /* Redacted info state */
         .book-page-info {
             flex: 1;
             color: #e0e0e0;
+        }
+
+        .book-page-info.redacted h2,
+        .book-page-info.redacted .page-author,
+        .book-page-info.redacted .page-description,
+        .book-page-info.redacted .page-quote,
+        .book-page-info.redacted .page-tags,
+        .book-page-info.redacted .page-genre {
+            position: relative;
+            color: transparent !important;
+            user-select: none;
+        }
+
+        .book-page-info.redacted h2 *,
+        .book-page-info.redacted .page-author *,
+        .book-page-info.redacted .page-description *,
+        .book-page-info.redacted .page-quote *,
+        .book-page-info.redacted .page-tags * {
+            color: transparent !important;
+        }
+
+        .book-page-info.redacted h2::after,
+        .book-page-info.redacted .page-author::after,
+        .book-page-info.redacted .page-description::after,
+        .book-page-info.redacted .page-quote::after {
+            content: '';
+            position: absolute;
+            top: 0.2em; left: 0; right: 0; bottom: 0.2em;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 0, 51, 0.15) 0px,
+                rgba(255, 0, 51, 0.15) 1.1em,
+                transparent 1.1em,
+                transparent 1.5em
+            );
+            border-radius: 4px;
+        }
+
+        .book-page-info.redacted .page-tags::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 60%;
+            height: 100%;
+            background: rgba(255, 0, 51, 0.12);
+            border-radius: 50px;
+        }
+
+        .book-page-info.redacted .page-genre::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 0, 51, 0.12);
+            border-radius: 50px;
+        }
+
+        /* Reveal button */
+        .reveal-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.8rem;
+            background: transparent;
+            border: 1px solid rgba(255, 0, 51, 0.4);
+            color: #ff3355;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reveal-btn:hover {
+            background: rgba(255, 0, 51, 0.1);
+            border-color: #ff3355;
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.15);
+        }
+
+        .reveal-btn.hidden {
+            display: none;
+        }
+
+        /* Revealed info animation */
+        .book-page-info.revealing h2,
+        .book-page-info.revealing .page-author,
+        .book-page-info.revealing .page-description,
+        .book-page-info.revealing .page-quote,
+        .book-page-info.revealing .page-tags,
+        .book-page-info.revealing .page-genre {
+            animation: revealText 0.5s ease forwards;
+        }
+        .book-page-info.revealing .page-author { animation-delay: 0.08s; }
+        .book-page-info.revealing .page-genre { animation-delay: 0.12s; }
+        .book-page-info.revealing .page-description { animation-delay: 0.2s; }
+        .book-page-info.revealing .page-quote { animation-delay: 0.35s; }
+        .book-page-info.revealing .page-tags { animation-delay: 0.45s; }
+
+        @keyframes revealText {
+            0% { opacity: 0; transform: translateY(5px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         .book-page-info .page-label {
@@ -1959,13 +2116,17 @@
     <div class="book-page active" data-page="0">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/klara och solen.webp" alt="Klara och Solen">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/klara och solen.webp" alt="Klara och Solen"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_01</span>
                 <span class="page-genre">Litteratur &middot; Sci-fi</span>
                 <h2>Klara och Solen</h2>
                 <p class="page-author">Kazuo Ishiguro <span class="page-year">2021</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     Ber&auml;ttad genom &ouml;gonen p&aring; Klara, en artificiell v&auml;n som observerar v&auml;rlden fr&aring;n ett skyltf&ouml;nster.
                     Med sin ovanliga blick avsl&ouml;jar hon vad det inneb&auml;r att &auml;lska, att vara ensam och att vara m&auml;nsklig.
@@ -1987,13 +2148,17 @@
     <div class="book-page" data-page="1">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/exhalation.webp" alt="Exhalation">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/exhalation.webp" alt="Exhalation"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_02</span>
                 <span class="page-genre">Sci-fi &middot; Noveller</span>
                 <h2>Exhalation</h2>
                 <p class="page-author">Ted Chiang <span class="page-year">2019</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     Nio noveller som utforskar fri vilja, tidens natur och vad det inneb&auml;r att vara medveten.
                     Ted Chiang skriver science fiction som f&aring;r en att stanna upp mitt i en mening och t&auml;nka:
@@ -2015,13 +2180,17 @@
     <div class="book-page" data-page="2">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/foucaults pendel.webp" alt="Foucaults pendel">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/foucaults pendel.webp" alt="Foucaults pendel"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_03</span>
                 <span class="page-genre">Litteratur &middot; Mysterium</span>
                 <h2>Foucaults pendel</h2>
                 <p class="page-author">Umberto Eco <span class="page-year">1988</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     Tre f&ouml;rlagsredakt&ouml;rer hittar p&aring; en gigantisk konspiration f&ouml;r skojs skull &mdash;
                     tills den b&ouml;rjar bli verklig. En labyrintisk, intellektuell thriller som v&auml;ver samman
@@ -2043,13 +2212,17 @@
     <div class="book-page" data-page="3">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/slakthus 5.webp" alt="Slakthus 5">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/slakthus 5.webp" alt="Slakthus 5"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_04</span>
                 <span class="page-genre">Klassiker &middot; Satir</span>
                 <h2>Slakthus 5</h2>
                 <p class="page-author">Kurt Vonnegut <span class="page-year">1969</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     Billy Pilgrim har &rdquo;lossnat i tiden&rdquo; och kastas mellan bombningen av Dresden,
                     ett utomjordiskt zoo och efterkrigstidens Amerika. Vonneguts m&auml;sterverk &auml;r
@@ -2071,13 +2244,17 @@
     <div class="book-page" data-page="4">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/illusionisten.webp" alt="Illusionisten">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/illusionisten.webp" alt="Illusionisten"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_05</span>
                 <span class="page-genre">Litteratur &middot; Psykologisk</span>
                 <h2>Illusionisten</h2>
                 <p class="page-author">John Fowles <span class="page-year">1965</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     En ung engelsman anl&auml;nder till en grekisk &ouml; och dras in i en mystisk miljon&auml;rs
                     elaborerade psykologiska spel. Ingenting &auml;r vad det verkar vara. En bok som vrider och v&auml;nder
@@ -2099,13 +2276,17 @@
     <div class="book-page" data-page="5">
         <div class="book-page-inner">
             <div class="book-page-cover">
-                <img src="Böcker/neuromancer.webp" alt="Neuromancer">
+                <div class="cover-flipper">
+                    <div class="cover-front"><div class="cover-mystery"><span class="mystery-icon">?</span><span class="mystery-label">Klassificerad</span></div></div>
+                    <div class="cover-back"><img src="Böcker/neuromancer.webp" alt="Neuromancer"></div>
+                </div>
             </div>
-            <div class="book-page-info">
+            <div class="book-page-info redacted">
                 <span class="page-label">// arkiv::bok_06</span>
                 <span class="page-genre">Cyberpunk &middot; Sci-fi</span>
                 <h2>Neuromancer</h2>
                 <p class="page-author">William Gibson <span class="page-year">1984</span></p>
+                <button class="reveal-btn" onclick="revealBook(this)">Avsl&ouml;ja bok</button>
                 <p class="page-description">
                     Boken som uppfann cyberpunk. Case, en utbr&auml;nd hackare, f&aring;r en sista chans att
                     jaga sig in i cyberrymden och utf&ouml;ra det ultimata dataintr&aring;nget. Gibson m&aring;lade en framtid
@@ -2217,6 +2398,18 @@
 </footer>
 
 <script>
+function revealBook(btn) {
+    const page = btn.closest('.book-page');
+    // Flip the cover
+    page.querySelector('.book-page-cover').classList.add('revealed');
+    // Remove redacted, add reveal animation
+    const info = page.querySelector('.book-page-info');
+    info.classList.remove('redacted');
+    info.classList.add('revealing');
+    // Hide button
+    btn.classList.add('hidden');
+}
+
 (function() {
     'use strict';
 
