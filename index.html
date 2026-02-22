@@ -665,20 +665,49 @@
             text-align: center;
             padding: 3rem 2rem;
             display: none;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
         }
 
         .winner-panel.visible {
             display: block;
         }
 
+        .winner-bg-cover {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(18px) brightness(0.35);
+            transform: scale(1.15);
+            z-index: 0;
+        }
+
+        .winner-panel > *:not(.winner-bg-cover):not(.confetti-canvas) {
+            position: relative;
+            z-index: 1;
+        }
+
         .winner-cover-img {
-            max-width: 220px;
-            max-height: 330px;
-            border-radius: 8px;
-            box-shadow: 0 8px 40px rgba(201, 168, 76, 0.3), 0 0 60px rgba(201, 168, 76, 0.15);
+            max-width: 280px;
+            max-height: 420px;
+            border-radius: 12px;
+            box-shadow: 0 12px 60px rgba(201, 168, 76, 0.4), 0 0 80px rgba(201, 168, 76, 0.2);
             margin: 1.5rem auto;
             display: block;
             animation: pulse 2s ease-in-out infinite;
+        }
+
+        .confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
         }
 
         .winner-trophy {
@@ -2626,6 +2655,7 @@
 
         <div class="results-panel" id="resultsPanel"></div>
         <div class="winner-panel" id="winnerPanel">
+            <div class="winner-bg-cover" id="winnerBgCover"></div>
             <div class="winner-trophy">&#9733;</div>
             <p>Bokcirkeln har valt</p>
             <div class="winner-book-title" id="winnerTitle"></div>
@@ -3105,7 +3135,73 @@ function revealBook(btn) {
         });
     }
 
+    // ── Confetti rain ──
+    function startConfetti(panel) {
+        // Remove any old canvas
+        const old = panel.querySelector('.confetti-canvas');
+        if (old) old.remove();
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'confetti-canvas';
+        panel.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = panel.offsetWidth;
+            canvas.height = panel.offsetHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const colors = ['#c9a84c', '#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#ff9ff3', '#fff'];
+        const pieces = [];
+        for (let i = 0; i < 150; i++) {
+            pieces.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                w: 4 + Math.random() * 6,
+                h: 8 + Math.random() * 8,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vy: 1.5 + Math.random() * 3,
+                vx: (Math.random() - 0.5) * 2,
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.15,
+                opacity: 0.7 + Math.random() * 0.3,
+            });
+        }
+
+        let running = true;
+        function draw() {
+            if (!running) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => {
+                p.y += p.vy;
+                p.x += p.vx;
+                p.rot += p.rotSpeed;
+                if (p.y > canvas.height + 20) {
+                    p.y = -20;
+                    p.x = Math.random() * canvas.width;
+                }
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // Return stop function
+        return () => { running = false; canvas.remove(); window.removeEventListener('resize', resize); };
+    }
+
     // ── Render winner ──
+    let stopConfetti = null;
+    let fanfarAudio = null;
+
     function renderWinner() {
         const panel = document.getElementById('winnerPanel');
         if (state.finished && state.winner) {
@@ -3121,6 +3217,10 @@ function revealBook(btn) {
                 coverImg.src = winnerBook.cover;
                 coverImg.alt = winnerBook.title;
                 coverImg.style.display = '';
+
+                // Set fullscreen blurred background
+                const bgDiv = document.getElementById('winnerBgCover');
+                bgDiv.style.backgroundImage = `url('${winnerBook.cover}')`;
             }
 
             // Show all robots happy
@@ -3140,12 +3240,25 @@ function revealBook(btn) {
             music.pause();
             music.currentTime = 0;
 
+            // Play fanfar
+            if (!fanfarAudio) {
+                fanfarAudio = new Audio('fanfar.mp3');
+                fanfarAudio.play().catch(() => {});
+            }
+
+            // Start confetti
+            if (!stopConfetti) {
+                stopConfetti = startConfetti(panel);
+            }
+
             // Scroll to winner panel
             setTimeout(() => {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 300);
         } else {
             panel.classList.remove('visible');
+            if (stopConfetti) { stopConfetti(); stopConfetti = null; }
+            if (fanfarAudio) { fanfarAudio.pause(); fanfarAudio.currentTime = 0; fanfarAudio = null; }
         }
     }
 
