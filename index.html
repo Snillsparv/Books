@@ -1868,6 +1868,9 @@
     <button class="page-nav-vote-btn" id="goToVoteBtn">R&ouml;sta &#9658;</button>
 </div>
 
+<!-- Background music -->
+<audio id="bgMusic" src="musik.mp3" preload="auto" loop></audio>
+
 <!-- Glitch overlay elements -->
 <div class="glitch-overlay" id="glitchOverlay">
     <div class="glitch-bar"></div>
@@ -2349,6 +2352,11 @@
         overlay.classList.add('active');
         textOverlay.classList.add('active');
         document.body.classList.add('screen-shake');
+
+        // Start music
+        const music = document.getElementById('bgMusic');
+        music.currentTime = 0;
+        music.play().catch(() => {});
 
         // Remove screen shake
         setTimeout(() => {
