@@ -1826,6 +1826,106 @@
             display: flex;
         }
 
+        /* ── Classified Image Sequence ── */
+        .classified-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 7500;
+            background: #0a0a0a;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .classified-overlay.active {
+            display: flex;
+        }
+
+        .classified-overlay .classified-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: rgba(255, 0, 51, 0.5);
+            margin-bottom: 1.5rem;
+        }
+
+        .classified-overlay .classified-img-wrap {
+            position: relative;
+            max-width: 70vw;
+            max-height: 65vh;
+        }
+
+        .classified-overlay .classified-img-wrap img {
+            max-width: 70vw;
+            max-height: 65vh;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 0, 51, 0.25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 0, 51, 0.15);
+            transition: filter 0.8s ease, transform 0.8s ease;
+        }
+
+        .classified-overlay .classified-img-wrap img.blurred {
+            filter: blur(30px) brightness(0.6);
+        }
+
+        .classified-overlay .classified-img-wrap img.zoomed {
+            transform: scale(1.4);
+        }
+
+        .classified-overlay .classified-hint {
+            margin-top: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Mission Briefing Screen ── */
+        .mission-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 5;
+            background: rgba(10, 10, 10, 0.95);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .mission-screen.active {
+            display: flex;
+        }
+
+        .mission-screen .mission-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: rgba(255, 0, 51, 0.6);
+            margin-bottom: 1rem;
+        }
+
+        .mission-screen h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: #ff3355;
+            margin-bottom: 1.5rem;
+        }
+
+        .mission-screen .mission-text {
+            max-width: 550px;
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 2rem;
+        }
+
         .game-video-screen {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -2348,6 +2448,15 @@
     <span class="glitch-msg">SYSTEM OVERRIDE</span>
 </div>
 
+<!-- ════════════════ CLASSIFIED IMAGE ════════════════ -->
+<div class="classified-overlay" id="classifiedOverlay">
+    <span class="classified-label">Klassificerad bild</span>
+    <div class="classified-img-wrap">
+        <img id="classifiedImg" class="blurred" src="bilden.webp" alt="Classified">
+    </div>
+    <span class="classified-hint" id="classifiedHint">Klicka f&ouml;r att avsl&ouml;ja</span>
+</div>
+
 <!-- ════════════════ ROBOT GAME ════════════════ -->
 <div class="robot-game-overlay" id="robotGameOverlay">
     <div class="robot-game-hud">
@@ -2357,14 +2466,25 @@
     </div>
     <canvas id="robotGameCanvas"></canvas>
 
-    <!-- Pre-game video -->
-    <div class="game-video-screen" id="gameVideoScreen1">
-        <video id="gameVideo1" src="film_1.mp4" playsinline></video>
+    <!-- Pre-game video (preloaded) -->
+    <div class="game-video-screen" id="gameVideoScreen1" style="display:none;">
+        <video id="gameVideo1" src="film_1.mp4" playsinline preload="auto"></video>
     </div>
 
     <!-- Post-game video -->
     <div class="game-video-screen" id="gameVideoScreen2" style="display:none;">
-        <video id="gameVideo2" src="film_2.mp4" playsinline></video>
+        <video id="gameVideo2" src="film_2.mp4" playsinline preload="auto"></video>
+    </div>
+
+    <!-- Mission briefing -->
+    <div class="mission-screen" id="missionScreen">
+        <span class="mission-label">// uppdrag</span>
+        <h2>Uppdrag</h2>
+        <p class="mission-text">
+            F&ouml;r att r&auml;dda bokcirkelns goda rykte m&aring;ste bilden f&ouml;rst&ouml;ras f&ouml;r alltid!
+            Hj&auml;lp varandra att ta den hela v&auml;gen till eldstationen!
+        </p>
+        <button class="game-start-btn" id="missionStartBtn">Starta uppdrag</button>
     </div>
 
     <div class="game-start-screen" id="gameStartScreen" style="display:none;">
@@ -3049,12 +3169,44 @@ function revealBook(btn) {
         }, 800);
     });
 
-    // Go to game – close book pages and launch robot game
+    // Go to classified image → film → mission → game → voting
     document.getElementById('goToVoteBtn').addEventListener('click', () => {
         document.getElementById('bookPagesContainer').classList.remove('active');
         document.getElementById('pageNav').classList.remove('active');
-        startRobotGame();
+        startClassifiedSequence();
     });
+
+    // ── Classified Image Sequence ──
+    function startClassifiedSequence() {
+        const overlay = document.getElementById('classifiedOverlay');
+        const img = document.getElementById('classifiedImg');
+        const hint = document.getElementById('classifiedHint');
+        let step = 0;
+
+        overlay.classList.add('active');
+        img.className = 'blurred';
+        img.src = 'bilden.webp';
+        hint.textContent = 'Klicka för att avslöja';
+
+        overlay.onclick = () => {
+            step++;
+            if (step === 1) {
+                // Unblur
+                img.classList.remove('blurred');
+                hint.textContent = 'Klicka igen...';
+            } else if (step === 2) {
+                // Zoom + swap image
+                img.classList.add('zoomed');
+                img.src = 'bilden_musch.webp';
+                hint.textContent = '';
+            } else if (step === 3) {
+                // Go to film_1
+                overlay.classList.remove('active');
+                overlay.onclick = null;
+                startRobotGame();
+            }
+        };
+    }
 
     // ── Robot Flying Game ──
     function startRobotGame() {
@@ -3086,18 +3238,32 @@ function revealBook(btn) {
 
         overlay.classList.add('active');
 
-        // ── Phase 1: Play film_1 first ──
+        // ── Phase 1: Play film_1 ──
+        const missionScreen = document.getElementById('missionScreen');
+        missionScreen.style.display = 'none';
         videoScreen1.style.display = '';
+        video1.currentTime = 0;
         video1.play();
         video1.onended = () => {
             videoScreen1.style.display = 'none';
-            showPlayerStart();
+            showMission();
         };
-        // Click to skip
         videoScreen1.onclick = () => {
             video1.pause();
             video1.onended = null;
             videoScreen1.style.display = 'none';
+            showMission();
+        };
+
+        // ── Phase 2: Mission briefing ──
+        function showMission() {
+            missionScreen.style.display = '';
+            missionScreen.classList.add('active');
+        }
+
+        document.getElementById('missionStartBtn').onclick = () => {
+            missionScreen.classList.remove('active');
+            missionScreen.style.display = 'none';
             showPlayerStart();
         };
 
