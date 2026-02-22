@@ -1531,6 +1531,10 @@
             Utforska b&ouml;ckerna
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
         </button>
+        <button class="hero-cta" id="enterBooksBtn" style="display:none;">
+            &Ouml;ppna b&ouml;ckerna
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
     </div>
 </section>
 
@@ -2340,7 +2344,7 @@
         if (e.key === 'ArrowRight') goToPage(currentPage + 1);
     });
 
-    // The glitch transition
+    // Phase 1: Glitch transition to dystopian background only
     function triggerDystopianTransition() {
         if (isDystopian) return;
         isDystopian = true;
@@ -2363,14 +2367,15 @@
             document.body.classList.remove('screen-shake');
         }, 400);
 
-        // Swap theme halfway through the glitch (when screen is darkest)
+        // Swap theme halfway through the glitch (background only, no books yet)
         setTimeout(() => {
             document.body.classList.add('dystopian');
-            document.getElementById('bookPagesContainer').classList.add('active');
-            document.getElementById('pageNav').classList.add('active');
-            buildPageNav();
-            // Lock body scroll
-            document.body.style.overflow = 'hidden';
+            // Hide the first button, show the enter button
+            document.getElementById('exploreBooksBtn').style.display = 'none';
+            const enterBtn = document.getElementById('enterBooksBtn');
+            enterBtn.style.display = '';
+            enterBtn.style.opacity = '0';
+            enterBtn.style.animation = 'fadeInUp 0.8s ease forwards 0.3s';
         }, 900);
 
         // Clean up glitch overlays
@@ -2380,15 +2385,25 @@
         }, 2000);
     }
 
-    // CTA button triggers the glitch
+    // Phase 2: Show the books
+    function showBooks() {
+        document.getElementById('bookPagesContainer').classList.add('active');
+        document.getElementById('pageNav').classList.add('active');
+        buildPageNav();
+        document.body.style.overflow = 'hidden';
+        document.getElementById('enterBooksBtn').style.display = 'none';
+    }
+
+    // First click: glitch to dystopian background
     document.getElementById('exploreBooksBtn').addEventListener('click', (e) => {
         e.preventDefault();
-        if (isDystopian) {
-            // Already in dystopian mode, show first page
-            goToPage(0);
-        } else {
-            triggerDystopianTransition();
-        }
+        triggerDystopianTransition();
+    });
+
+    // Second click: open the books
+    document.getElementById('enterBooksBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        showBooks();
     });
 
     // Go to voting – close book pages and show voting section
