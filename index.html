@@ -2622,9 +2622,13 @@ function revealBook(btn) {
         return (window._raceGoldVoters || []).includes(voterName);
     }
 
+    function isLastRound() {
+        return state.currentRound >= TOTAL_ROUNDS - 1;
+    }
+
     function getCurrentPicks() {
         const base = PICKS_PER_ROUND[state.currentRound] || 1;
-        if (state.selectedVoter && hasGoldVote(state.selectedVoter)) {
+        if (!isLastRound() && state.selectedVoter && hasGoldVote(state.selectedVoter)) {
             return base + 1;
         }
         return base;
@@ -2791,7 +2795,7 @@ function revealBook(btn) {
             return;
         }
 
-        if (hasGoldVote(state.selectedVoter)) {
+        if (!isLastRound() && hasGoldVote(state.selectedVoter)) {
             instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter <span style="color:#c9a84c">(inkl. guldröst — du kan dubbelrösta på en bok!)</span>:`;
         } else {
             instruction.innerHTML = `<strong>${state.selectedVoter}</strong>, v\u00e4lj dina <strong>${picks}</strong> favoriter:`;
@@ -2811,7 +2815,7 @@ function revealBook(btn) {
         opt.className = 'vote-option';
         const selectCount = state.selectedBooks.filter(id => id === book.id).length;
         if (selectCount > 0) opt.classList.add('selected');
-        const gold = state.selectedVoter && hasGoldVote(state.selectedVoter);
+        const gold = !isLastRound() && state.selectedVoter && hasGoldVote(state.selectedVoter);
         opt.innerHTML = `
             <div class="vote-radio"><div class="vote-radio-inner"></div></div>
             <div class="vote-option-info">
@@ -2863,6 +2867,12 @@ function revealBook(btn) {
 
         round.votes[state.selectedVoter] = [...state.selectedBooks];
         state.selectedBooks = [];
+
+        // Auto-advance to next voter who hasn't voted yet
+        const voted = getRoundVoters();
+        voted.push(state.selectedVoter); // include the one who just voted
+        const nextVoter = MEMBERS.find(m => !voted.includes(m));
+        state.selectedVoter = nextVoter || null;
 
         saveState();
         render();
@@ -2927,7 +2937,8 @@ function revealBook(btn) {
             state.currentRound++;
         }
 
-        state.selectedVoter = null;
+        // Auto-select first voter for next round
+        state.selectedVoter = state.finished ? null : MEMBERS[0];
         state.selectedBooks = [];
         saveState();
         render();
@@ -3005,6 +3016,17 @@ function revealBook(btn) {
                 if (name === 'Jonas') wrap.innerHTML = `<img src="${ROBOT_IMAGES[name].lys}" alt="${name}">`;
                 robotsContainer.appendChild(wrap);
             });
+
+            // Remove dystopian theme and stop music
+            document.body.classList.remove('dystopian');
+            const music = document.getElementById('bgMusic');
+            music.pause();
+            music.currentTime = 0;
+
+            // Scroll to winner panel
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
         } else {
             panel.classList.remove('visible');
         }
@@ -3059,6 +3081,10 @@ function revealBook(btn) {
     }
 
     // ── Init ──
+    // Auto-select first voter if none selected
+    if (!state.selectedVoter && !state.finished) {
+        state.selectedVoter = MEMBERS[0];
+    }
     render();
 
     // ═══════════════════════════════════════════
