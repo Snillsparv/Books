@@ -736,7 +736,7 @@
             justify-content: center;
             gap: 1.2rem;
             margin-bottom: 2.5rem;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         .robot-avatar {
@@ -1666,7 +1666,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
         </button>
         <button class="hero-cta" id="enterBooksBtn" style="display:none;">
-            Till r&ouml;stningen
+            &Ouml;ppna b&ouml;ckerna
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
     </div>
@@ -2660,10 +2660,10 @@
         triggerDystopianTransition();
     });
 
-    // Second click: go directly to voting
+    // Second click: open the books
     document.getElementById('enterBooksBtn').addEventListener('click', (e) => {
         e.preventDefault();
-        document.getElementById('voting').scrollIntoView({ behavior: 'smooth' });
+        showBooks();
     });
 
     // Go to voting – close book pages and show voting section
