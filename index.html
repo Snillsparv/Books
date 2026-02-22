@@ -2056,7 +2056,7 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            left: 12%;
+            left: 6%;
             width: 2px;
             background: rgba(255, 255, 255, 0.5);
             z-index: 1;
@@ -3718,7 +3718,7 @@ function revealBook(btn) {
 
                 // Physics
                 const micLevel = getMicLevel();
-                const micThrust = micLevel > 0.12; // threshold for voice activation
+                const micThrust = micLevel > 0.06; // threshold for voice activation
                 thrusting = !!keys.up || micThrust;
                 if (thrusting) {
                     velocity += (flapStrength * 0.15) * dt;
