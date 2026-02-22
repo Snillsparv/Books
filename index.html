@@ -675,14 +675,19 @@
         }
 
         .winner-bg-cover {
-            position: absolute;
+            position: fixed;
             inset: 0;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            filter: blur(18px) brightness(0.35);
-            transform: scale(1.15);
+            filter: blur(6px) brightness(0.4);
+            transform: scale(1.05);
             z-index: 0;
+            display: none;
+        }
+
+        .winner-bg-cover.visible {
+            display: block;
         }
 
         .winner-panel > *:not(.winner-bg-cover):not(.confetti-canvas) {
@@ -2654,8 +2659,8 @@
         <button class="vote-submit-btn" id="submitVoteBtn" disabled>R&ouml;sta</button>
 
         <div class="results-panel" id="resultsPanel"></div>
+        <div class="winner-bg-cover" id="winnerBgCover"></div>
         <div class="winner-panel" id="winnerPanel">
-            <div class="winner-bg-cover" id="winnerBgCover"></div>
             <div class="winner-trophy">&#9733;</div>
             <p>Bokcirkeln har valt</p>
             <div class="winner-book-title" id="winnerTitle"></div>
@@ -3218,9 +3223,10 @@ function revealBook(btn) {
                 coverImg.alt = winnerBook.title;
                 coverImg.style.display = '';
 
-                // Set fullscreen blurred background
+                // Set fullscreen background
                 const bgDiv = document.getElementById('winnerBgCover');
                 bgDiv.style.backgroundImage = `url('${winnerBook.cover}')`;
+                bgDiv.classList.add('visible');
             }
 
             // Show all robots happy
@@ -3257,6 +3263,7 @@ function revealBook(btn) {
             }, 300);
         } else {
             panel.classList.remove('visible');
+            document.getElementById('winnerBgCover').classList.remove('visible');
             if (stopConfetti) { stopConfetti(); stopConfetti = null; }
             if (fanfarAudio) { fanfarAudio.pause(); fanfarAudio.currentTime = 0; fanfarAudio = null; }
         }
